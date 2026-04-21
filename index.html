@@ -2121,7 +2121,7 @@
     // ─────────────────────────────────────────────────────────────
     //  CONFIG  (no external SDK — uses Supabase REST API directly)
     // ─────────────────────────────────────────────────────────────
-    const PHONE_NUMBER_IDS = { travel: '796090990258930', shield: '963260520198271' };
+    const PHONE_NUMBER_IDS = { travel: '1036891702830183', shield: '963260520198271' };
 
     let SUPABASE_URL = '';
     let SUPABASE_KEY = '';   // anon key
@@ -3037,25 +3037,22 @@
     // ─────────────────────────────────────────────────────────────
     const META_GRAPH = 'https://graph.facebook.com/v22.0';
 
-    async function metaGet(path) {
-      const res = await fetch(META_GRAPH + path, {
-        headers: { 'Authorization': 'Bearer ' + META_TOKEN }
+    // All Meta API calls route through /api/meta (Vercel proxy)
+    // This avoids CORS errors and ad-blocker interference
+    async function _metaProxy(method, path, body) {
+      const res = await fetch('/api/meta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method, path, body, token: META_TOKEN })
       });
       const json = await res.json();
       if (!res.ok) throw new Error((json.error && json.error.message) || 'Meta API error ' + res.status);
       return json;
     }
 
-    async function metaPost(path, body) {
-      const res = await fetch(META_GRAPH + path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + META_TOKEN },
-        body: JSON.stringify(body)
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error((json.error && json.error.message) || 'Meta API error ' + res.status);
-      return json;
-    }
+    async function metaGet(path)        { return _metaProxy('GET',    path); }
+    async function metaPost(path, body)  { return _metaProxy('POST',   path, body); }
+    async function metaDelete(path)      { return _metaProxy('DELETE', path); }
 
     // ─────────────────────────────────────────────────────────────
     //  TEMPLATE CACHE
@@ -3228,12 +3225,8 @@
         const path = id
           ? '/' + META_WABA_ID + '/message_templates?hsm_id=' + encodeURIComponent(id) + '&name=' + encodeURIComponent(name)
           : '/' + META_WABA_ID + '/message_templates?name=' + encodeURIComponent(name);
-        const res = await fetch('https://graph.facebook.com/v19.0' + path, {
-          method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + META_TOKEN }
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error((json.error && json.error.message) || 'Delete failed ' + res.status);
+        const json = await metaDelete(path);
+        if (!json) throw new Error('Delete failed');
         showToast('Template "' + name + '" deleted.');
         await loadTemplates();
       } catch (e) {
