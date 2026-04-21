@@ -3527,10 +3527,33 @@
       };
       console.log('[Template Send] phone_number_id:', phoneNumberId, 'payload:', JSON.stringify(payload, null, 2));
       try {
-        await metaPost('/' + phoneNumberId + '/messages', payload);
+        const metaRes = await metaPost('/' + phoneNumberId + '/messages', payload);
+        const wamid = metaRes?.messages?.[0]?.id || null;
+
+        // Build readable content from template name + filled params
+        const paramValues = bodyParams.map(p => p.text);
+        const content = '[Template: ' + _selectedTmpl.name + ']' +
+          (paramValues.length ? ' — ' + paramValues.join(', ') : '');
+
+        // Log to Supabase via n8n human-reply webhook
+        const baseSessionId = selectedConv.session_id.replace(/_(travel|shield)$/, '');
+        if (N8N_BASE_URL) {
+          fetch(N8N_BASE_URL + '/webhook/human-reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              session_id: baseSessionId,
+              to_phone_number: toPhone,
+              from_phone_number_id: phoneNumberId,
+              message: content,
+              wamid
+            })
+          }).catch(() => {});
+        }
+
         closeSendTmplModal();
         showToast('✓ Template sent to ' + (selectedConv.whatsapp_name || toPhone));
-        await loadMessages();
+        setTimeout(loadMessages, 1500);
       } catch (e) {
         errEl.innerHTML = 'Send failed: ' + escHtml(e.message) +
           '<br><small style="color:#6b7280">Phone ID: ' + escHtml(phoneNumberId) +
