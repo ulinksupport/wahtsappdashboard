@@ -3579,9 +3579,6 @@
       };
       console.log('[Template Send] phone_number_id:', phoneNumberId, 'payload:', JSON.stringify(payload, null, 2));
       try {
-        const metaRes = await metaPost('/' + phoneNumberId + '/messages', payload);
-        const wamid = metaRes?.messages?.[0]?.id || null;
-
         // Build readable content by substituting params into the actual template body text
         let expandedBody = (bodyComp && bodyComp.text) ? bodyComp.text : '';
         bodyParams.forEach((p, i) => {
@@ -3591,22 +3588,26 @@
         const content = '[Template: ' + _selectedTmpl.name + '] ' +
           (expandedBody || paramValues.join(', '));
 
-        // Log to Supabase via n8n human-reply webhook
         const baseSessionId = selectedConv.session_id.replace(/_(travel|shield)$/, '');
-        if (N8N_BASE_URL) {
-          fetch(N8N_BASE_URL + '/webhook/human-reply', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              session_id: baseSessionId,
-              to_phone_number: toPhone,
-              from_phone_number_id: phoneNumberId,
-              message: content,
-              wamid,
-              is_template: true
-            })
-          }).catch(() => {});
-        }
+        if (!N8N_BASE_URL) throw new Error('n8n Base URL not configured in Settings.');
+
+        // n8n handles both sending the template (via its WhatsApp credential) and logging to Supabase
+        const n8nRes = await fetch(N8N_BASE_URL + '/webhook/human-reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: baseSessionId,
+            to_phone_number: toPhone,
+            from_phone_number_id: phoneNumberId,
+            message: content,
+            is_template: true,
+            template_name: _selectedTmpl.name,
+            template_language: tmplLang,
+            template_components: components
+          })
+        });
+        const n8nData = await n8nRes.json();
+        if (!n8nData.success) throw new Error(n8nData.error || 'Template send failed');
 
         closeSendTmplModal();
         showToast('✓ Template sent to ' + (selectedConv.whatsapp_name || toPhone));
