@@ -3563,6 +3563,18 @@
       });
       const components = [];
       if (bodyParams.length) components.push({ type: 'body', parameters: bodyParams });
+      // Include quick reply button components — Meta requires these even for static buttons
+      const _btnComp = (_selectedTmpl.components || []).find(c => c.type === 'BUTTONS');
+      if (_btnComp && _btnComp.buttons) {
+        _btnComp.buttons.forEach((b, i) => {
+          if (b.type === 'QUICK_REPLY') {
+            components.push({
+              type: 'button', sub_type: 'quick_reply', index: String(i),
+              parameters: [{ type: 'payload', payload: b.text || ('BTN_' + i) }]
+            });
+          }
+        });
+      }
       const phoneNumberId = PHONE_NUMBER_IDS[selectedConv.branch] || Object.values(PHONE_NUMBER_IDS)[0];
       const toPhone = selectedConv.phone_number || '';
       const btn = document.getElementById('send-tmpl-confirm-btn');
