@@ -435,6 +435,24 @@
       cursor: default;
     }
 
+    /* Close Chat button — only shown in Human Active mode */
+    #close-chat-btn {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #dc2626;
+      color: #fff;
+      flex-shrink: 0;
+      display: none;
+      transition: all .15s;
+    }
+
+    #close-chat-btn:hover:not(:disabled) { background: #b91c1c; }
+    #close-chat-btn:disabled { opacity: .5; cursor: default; }
+
     /* Toast notification */
     #toast {
       position: fixed;
@@ -1880,6 +1898,7 @@
               <button id="btn-ai-mode" class="mode-btn active" onclick="setModeAI()">🤖 AI Active</button>
               <button id="btn-human-mode" class="mode-btn" onclick="setModeHuman()">👤 Human Active</button>
             </div>
+            <button id="close-chat-btn" onclick="closeChat()" title="Close this conversation and notify ops">&#10005; Close Chat</button>
           </div>
         </div>
 
@@ -2630,7 +2649,22 @@
         console.log('[loadMessages] session:', selectedSessionId, '| base:', base);
         const allRelated = await sbGetAll(msgQuery);
         console.log('[loadMessages] fetched', allRelated?.length ?? 0, 'messages');
-        const data = (allRelated || []).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+
+        // Deduplicate: prefer row with highest id when content+role+timestamp collide.
+        // Supabase rows always have an integer `id`; if two rows share the same
+        // (content, role, created_at) keep only the one with the smaller id (first saved).
+        const seenIds = new Set();
+        const dedupedByKey = new Map();
+        (allRelated || []).forEach(m => {
+          if (m.id != null) {
+            if (seenIds.has(m.id)) return;   // exact duplicate row
+            seenIds.add(m.id);
+          }
+          // Secondary dedup: same role + content + timestamp = true duplicate
+          const key = (m.role || '') + '|' + (m.created_at || '') + '|' + (m.content || '');
+          if (!dedupedByKey.has(key)) dedupedByKey.set(key, m);
+        });
+        const data = Array.from(dedupedByKey.values()).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
 
         // Always render on first load; otherwise only re-render if something changed
         const changed = JSON.stringify(data) !== JSON.stringify(messages);
@@ -2678,6 +2712,9 @@
       document.getElementById('reply-bar').classList.toggle('locked', replyLocked);
       document.getElementById('human-mode-notice').style.display = (isHuman && !isInactive) ? 'block' : 'none';
       document.getElementById('inactive-banner').style.display = isInactive ? 'block' : 'none';
+
+      // Close Chat button: only visible when human has taken over
+      document.getElementById('close-chat-btn').style.display = isHuman ? 'inline-flex' : 'none';
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -2826,6 +2863,49 @@
 
       btnAI.disabled = false;
       btnHuman.disabled = false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  CLOSE CHAT (human takeover → close & notify ops)
+    // ─────────────────────────────────────────────────────────────
+    async function closeChat() {
+      if (!selectedConv) return;
+      const name = selectedConv.customer_name || selectedConv.whatsapp_name || selectedConv.phone_number || 'Unknown';
+      if (!confirm('Close this conversation?\n\nThis will:\n• Set the chat status to Closed\n• Send a notification email to ops@ulinkassist.com with the full transcript\n\nCustomer: ' + name)) return;
+
+      const btn = document.getElementById('close-chat-btn');
+      btn.disabled = true;
+      btn.textContent = 'Closing…';
+
+      try {
+        const basePhone = selectedConv.session_id.replace(/_(travel|shield)$/, '');
+        const res = await fetch(N8N_BASE_URL + '/webhook/human-close-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone_number: basePhone,
+            session_id: selectedConv.session_id,
+            customer_name: name,
+            branch: selectedConv.branch || 'N/A'
+          })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        // Update local state so header and list reflect closed status immediately
+        selectedConv.route = 'closed';
+        selectedConv.status = 'closed';
+        const idx = conversations.findIndex(c => c.session_id === selectedConv.session_id);
+        if (idx >= 0) { conversations[idx].route = 'closed'; conversations[idx].status = 'closed'; }
+
+        updateChatHeader();
+        renderConvList();
+        showToast('✓ Chat closed — ops notified');
+      } catch (e) {
+        alert('Close chat failed: ' + e.message);
+      }
+
+      btn.disabled = false;
+      btn.textContent = '✕ Close Chat';
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -3591,18 +3671,7 @@
       };
       console.log('[Template Send] phone_number_id:', phoneNumberId, 'payload:', JSON.stringify(payload, null, 2));
       try {
-        // 1. Send template directly via Meta API (bypass Vercel proxy — proxy fails on message POSTs)
-        if (!META_TOKEN) throw new Error('Meta Access Token not configured in Settings.');
-        const _tmplFetch = await fetch('https://graph.facebook.com/v26.0/' + phoneNumberId + '/messages', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + META_TOKEN, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const metaRes = await _tmplFetch.json().catch(() => ({}));
-        if (!_tmplFetch.ok) throw new Error((metaRes.error && metaRes.error.message) || 'Meta API error ' + _tmplFetch.status);
-        const wamid = metaRes?.messages?.[0]?.id || null;
-
-        // 2. Build expanded body text for display in dashboard chat
+        // Build expanded body for display
         let expandedBody = (bodyComp && bodyComp.text) ? bodyComp.text : '';
         bodyParams.forEach((p, i) => {
           expandedBody = expandedBody.replace(new RegExp('\\{\\{' + (i + 1) + '\\}\\}', 'g'), p.text);
@@ -3611,22 +3680,32 @@
         const content = '[Template: ' + _selectedTmpl.name + '] ' +
           (expandedBody || paramValues.join(', '));
 
-        // 3. Log to Supabase via n8n (fire-and-forget — n8n only logs, does not re-send)
         const baseSessionId = selectedConv.session_id.replace(/_(travel|shield)$/, '');
-        if (N8N_BASE_URL) {
-          fetch(N8N_BASE_URL + '/webhook/human-reply', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              session_id: baseSessionId,
-              to_phone_number: toPhone,
-              from_phone_number_id: phoneNumberId,
-              message: content,
-              wamid,
-              is_template: true
-            })
-          }).catch(() => {});
+        if (!N8N_BASE_URL) throw new Error('n8n Base URL not configured in Settings.');
+
+        // Route through n8n which uses the verified WhatsApp credential for actual delivery
+        const n8nRes = await fetch(N8N_BASE_URL + '/webhook/human-reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: baseSessionId,
+            to_phone_number: toPhone,
+            from_phone_number_id: phoneNumberId,
+            message: content,
+            is_template: true,
+            template_name: _selectedTmpl.name,
+            template_language: tmplLang,
+            template_components: components
+          })
+        });
+        let n8nData;
+        try {
+          const txt = await n8nRes.text();
+          n8nData = txt ? JSON.parse(txt) : {};
+        } catch (_) {
+          throw new Error('n8n error (status ' + n8nRes.status + ') — check n8n execution logs');
         }
+        if (!n8nData.success) throw new Error(n8nData.error || 'Template send failed');
 
         closeSendTmplModal();
         showToast('✓ Template sent to ' + (selectedConv.whatsapp_name || toPhone));
