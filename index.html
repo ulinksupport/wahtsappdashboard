@@ -3582,10 +3582,14 @@
         const metaRes = await metaPost('/' + phoneNumberId + '/messages', payload);
         const wamid = metaRes?.messages?.[0]?.id || null;
 
-        // Build readable content from template name + filled params
+        // Build readable content by substituting params into the actual template body text
+        let expandedBody = (bodyComp && bodyComp.text) ? bodyComp.text : '';
+        bodyParams.forEach((p, i) => {
+          expandedBody = expandedBody.replace(new RegExp('\\{\\{' + (i + 1) + '\\}\\}', 'g'), p.text);
+        });
         const paramValues = bodyParams.map(p => p.text);
-        const content = '[Template: ' + _selectedTmpl.name + ']' +
-          (paramValues.length ? ' — ' + paramValues.join(', ') : '');
+        const content = '[Template: ' + _selectedTmpl.name + '] ' +
+          (expandedBody || paramValues.join(', '));
 
         // Log to Supabase via n8n human-reply webhook
         const baseSessionId = selectedConv.session_id.replace(/_(travel|shield)$/, '');
