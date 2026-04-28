@@ -2520,8 +2520,11 @@
         if (query) {
           const name = (c.whatsapp_name || c.customer_name || '').toLowerCase();
           const phone = (c.phone_number || '').toLowerCase();
-          const msgs = allMessagesBySession[c.session_id] || [];
-          const matchesMsg = msgs.some(m => (m.content || '').toLowerCase().includes(query));
+          const baseId = c.session_id.replace(/_(travel|shield)$/, '');
+          const siblingMsgs = Object.keys(allMessagesBySession)
+            .filter(sid => sid === baseId || sid.startsWith(baseId + '_'))
+            .flatMap(sid => allMessagesBySession[sid]);
+          const matchesMsg = siblingMsgs.some(m => (m.content || '').toLowerCase().includes(query));
           if (!name.includes(query) && !phone.includes(query) && !matchesMsg) return false;
         }
         return true;
@@ -2557,7 +2560,10 @@
         const phoneLower = (c.phone_number || '').toLowerCase();
         const searchHitInMsg = searchQuery && !nameLower.includes(searchQuery) && !phoneLower.includes(searchQuery);
         if (searchHitInMsg) {
-          const sessionMsgs = allMessagesBySession[c.session_id] || [];
+          const baseId = c.session_id.replace(/_(travel|shield)$/, '');
+          const sessionMsgs = Object.keys(allMessagesBySession)
+            .filter(sid => sid === baseId || sid.startsWith(baseId + '_'))
+            .flatMap(sid => allMessagesBySession[sid]);
           const matchingMsg = sessionMsgs.find(m => (m.content || '').toLowerCase().includes(searchQuery));
           if (matchingMsg) {
             const content = (matchingMsg.content || '').replace(/\n/g, ' ');
