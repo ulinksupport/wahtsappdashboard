@@ -402,6 +402,48 @@
       100% { box-shadow: none; }
     }
 
+    /* ── Message status ticks ────────────────────────────────── */
+    .msg-time-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .msg-status {
+      font-size: 13px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .msg-status-sending   { color: #aaa; }
+    .msg-status-delivered { color: #aaa; }
+
+    .msg-status-failed {
+      color: #dc2626;
+      font-size: 14px;
+    }
+
+    .msg-row.assistant .msg-bubble.failed-bubble,
+    .msg-row.human_agent .msg-bubble.failed-bubble {
+      border: 1.5px solid #fca5a5;
+      background: #fff5f5;
+    }
+
+    .msg-fail-banner {
+      margin-top: 6px;
+      padding: 5px 8px;
+      background: #fee2e2;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #dc2626;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
     /* ── Right panel ─────────────────────────────────────── */
     #right-panel {
       flex: 1;
@@ -2996,12 +3038,33 @@
           return `<a href="${url}" target="_blank" style="color: #0369a1; text-decoration: underline;">${url}</a>`;
         });
 
+        // ── Delivery status for outbound messages ──────────────
+        const isOutbound = role === 'assistant' || role === 'human_agent';
+        const status = m.msg_status || null;
+        const isFailed = status === 'failed';
+
+        let statusIcon = '';
+        if (isOutbound) {
+          if (status === 'failed')         statusIcon = '<span class="msg-status msg-status-failed" title="Failed — message not delivered">✕</span>';
+          else if (status === 'delivered') statusIcon = '<span class="msg-status msg-status-delivered" title="Delivered">✓✓</span>';
+          else if (status === 'sending')   statusIcon = '<span class="msg-status msg-status-sending" title="Sending…">⌛</span>';
+          // sent/read: no icon — we don't track these
+        }
+
+        const failBanner = isFailed
+          ? `<div class="msg-fail-banner">⚠ Not delivered — message did not reach the customer</div>`
+          : '';
+
         html.push(`<div class="msg-row ${escAttr(role)}" data-msg-ts="${escAttr(m.created_at || '')}">
-      <div class="msg-bubble">
+      <div class="msg-bubble${isFailed ? ' failed-bubble' : ''}">
         <div class="msg-role-label">${roleLabel}</div>
         ${contentHtml}
         ${mediaHtml}
-        <div class="msg-time">${time}</div>
+        ${failBanner}
+        <div class="msg-time-row">
+          <span class="msg-time" style="margin-top:0;">${time}</span>
+          ${statusIcon}
+        </div>
       </div>
     </div>`);
       });
