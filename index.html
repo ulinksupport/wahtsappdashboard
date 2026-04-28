@@ -1843,7 +1843,7 @@
     <!-- Left: conversation list -->
     <div id="left-panel">
       <div id="search-bar">
-        <input id="search-input" type="text" placeholder="Search name or phone…" oninput="renderConvList()" />
+        <input id="search-input" type="text" placeholder="Search name, phone or messages…" oninput="renderConvList()" />
       </div>
       <div id="filters">
         <!-- Brand row -->
@@ -2520,7 +2520,9 @@
         if (query) {
           const name = (c.whatsapp_name || c.customer_name || '').toLowerCase();
           const phone = (c.phone_number || '').toLowerCase();
-          if (!name.includes(query) && !phone.includes(query)) return false;
+          const msgs = allMessagesBySession[c.session_id] || [];
+          const matchesMsg = msgs.some(m => (m.content || '').toLowerCase().includes(query));
+          if (!name.includes(query) && !phone.includes(query) && !matchesMsg) return false;
         }
         return true;
       });
@@ -2547,14 +2549,35 @@
 
         // Use latest message from live map, fallback to stored last_message
         const latestMsg = latestMsgMap[c.session_id];
-        const preview = latestMsg
-          ? (latestMsg.content || '').replace(/\n/g, ' ').slice(0, 60)
-          : (c.last_message || '').replace(/\n/g, ' ').slice(0, 60) || 'No messages yet';
 
-        // Role prefix for preview
-        const rolePrefix = latestMsg
-          ? (latestMsg.role === 'user' ? '' : latestMsg.role === 'human_agent' ? '👤 You: ' : '🤖 Bot: ')
-          : '';
+        // When searching message content, show the first matching message as preview
+        const searchQuery = document.getElementById('search-input').value.toLowerCase();
+        let preview, rolePrefix;
+        const nameLower = (c.whatsapp_name || c.customer_name || '').toLowerCase();
+        const phoneLower = (c.phone_number || '').toLowerCase();
+        const searchHitInMsg = searchQuery && !nameLower.includes(searchQuery) && !phoneLower.includes(searchQuery);
+        if (searchHitInMsg) {
+          const sessionMsgs = allMessagesBySession[c.session_id] || [];
+          const matchingMsg = sessionMsgs.find(m => (m.content || '').toLowerCase().includes(searchQuery));
+          if (matchingMsg) {
+            const content = (matchingMsg.content || '').replace(/\n/g, ' ');
+            const idx = content.toLowerCase().indexOf(searchQuery);
+            const start = Math.max(0, idx - 20);
+            const snippet = (start > 0 ? '…' : '') + content.slice(start, start + 70) + (start + 70 < content.length ? '…' : '');
+            preview = snippet;
+            rolePrefix = matchingMsg.role === 'human_agent' ? '👤 You: ' : matchingMsg.role === 'user' ? '' : '🤖 Bot: ';
+          } else {
+            preview = latestMsg ? (latestMsg.content || '').replace(/\n/g, ' ').slice(0, 60) : (c.last_message || '').replace(/\n/g, ' ').slice(0, 60) || 'No messages yet';
+            rolePrefix = latestMsg ? (latestMsg.role === 'user' ? '' : latestMsg.role === 'human_agent' ? '👤 You: ' : '🤖 Bot: ') : '';
+          }
+        } else {
+          preview = latestMsg
+            ? (latestMsg.content || '').replace(/\n/g, ' ').slice(0, 60)
+            : (c.last_message || '').replace(/\n/g, ' ').slice(0, 60) || 'No messages yet';
+          rolePrefix = latestMsg
+            ? (latestMsg.role === 'user' ? '' : latestMsg.role === 'human_agent' ? '👤 You: ' : '🤖 Bot: ')
+            : '';
+        }
 
         // Relative time
         const timeStr = latestMsg?.created_at ? relTime(latestMsg.created_at) : '';
