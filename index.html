@@ -2381,6 +2381,16 @@
       return res.json();
     }
 
+    async function sbPost(path, body) {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+        method: 'POST',
+        headers: sbHeaders(),
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('Supabase POST failed: ' + res.status + ' ' + await res.text());
+      return res.json();
+    }
+
     // ─────────────────────────────────────────────────────────────
     //  STATE
     // ─────────────────────────────────────────────────────────────
@@ -2884,8 +2894,7 @@
         console.log('[loadMessages] fetched', allRelated?.length ?? 0, 'messages');
 
         // Deduplicate: prefer row with highest id when content+role+timestamp collide.
-        // Supabase rows always have an integer `id`; if two rows share the same
-        // (content, role, created_at) keep only the one with the smaller id (first saved).
+        // Secondary dedup: group same role + content if within 60 seconds of each other
         const seenIds = new Set();
         const dedupedByKey = new Map();
         (allRelated || []).forEach(m => {
@@ -2893,9 +2902,21 @@
             if (seenIds.has(m.id)) return;   // exact duplicate row
             seenIds.add(m.id);
           }
-          // Secondary dedup: same role + content + timestamp = true duplicate
-          const key = (m.role || '') + '|' + (m.created_at || '') + '|' + (m.content || '');
-          if (!dedupedByKey.has(key)) dedupedByKey.set(key, m);
+          
+          // Fuzzy timestamp (group into 60-second buckets for deduplication)
+          // This prevents duplicates if n8n webhook and dashboard both save to Supabase
+          const ts = m.created_at ? new Date(m.created_at).getTime() : 0;
+          const fuzzyMinute = Math.floor(ts / 60000); 
+          const key = (m.role || '') + '|' + fuzzyMinute + '|' + (m.content || '');
+          
+          if (!dedupedByKey.has(key)) {
+            dedupedByKey.set(key, m);
+          } else {
+            // Keep the one with an id if possible
+            if (m.id != null && dedupedByKey.get(key).id == null) {
+              dedupedByKey.set(key, m);
+            }
+          }
         });
         const data = Array.from(dedupedByKey.values()).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
 
@@ -3977,6 +3998,19 @@
         }
         if (!n8nData.success) throw new Error(n8nData.error || 'Template send failed');
 
+        // ── Save message to Supabase to prevent AI Amnesia ──
+        try {
+          await sbPost('messages', {
+            session_id: baseSessionId,
+            role: 'human_agent',
+            content: content,
+            wamid: n8nData.wamid || null,
+            msg_status: 'sent'
+          });
+        } catch (dbErr) {
+          console.error('Failed to save template message to Supabase:', dbErr);
+        }
+
         closeSendTmplModal();
         showToast('✓ Template sent to ' + (selectedConv.whatsapp_name || toPhone));
         setTimeout(loadMessages, 1500);
@@ -4245,13 +4279,16 @@
     // ─────────────────────────────────────────────────────────────
     //  SEND REPLY
     // ─────────────────────────────────────────────────────────────
+    let _isSendingReply = false;
     async function sendReply() {
+      if (_isSendingReply) return;
       if (!selectedConv) return;
       const input = document.getElementById('reply-input');
       const sendBtn = document.getElementById('send-btn');
       const text = input.value.trim();
       if (!text && !_pendingMedia) return;
 
+      _isSendingReply = true;
       sendBtn.disabled = true;
       input.disabled = true;
 
@@ -4279,10 +4316,11 @@
 
       try {
         let wamid = null;
+        let mediaPublicUrl = null;
 
         if (capturedMedia) {
           // ── Media send: upload to Supabase Storage → n8n sends to WhatsApp ──
-          const mediaPublicUrl = await supabaseUploadMedia(capturedMedia.file, baseSessionId);
+          mediaPublicUrl = await supabaseUploadMedia(capturedMedia.file, baseSessionId);
           const res = await fetch(N8N_BASE_URL + '/webhook/human-reply', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4320,6 +4358,22 @@
           } catch (_) { }
         }
 
+        // ── Save message to Supabase to prevent AI Amnesia ──
+        try {
+          await sbPost('messages', {
+            session_id: baseSessionId,
+            role: 'human_agent',
+            content: capturedMedia ? (text || ('📎 ' + capturedMedia.file.name)) : text,
+            media_url: mediaPublicUrl || null,
+            media_type: capturedMedia ? capturedMedia.waType : null,
+            media_filename: capturedMedia ? capturedMedia.file.name : null,
+            wamid: wamid,
+            msg_status: 'sent'
+          });
+        } catch (dbErr) {
+          console.error('Failed to save human reply to Supabase:', dbErr);
+        }
+
         const idx = messages.findIndex(m => m._optimistic);
         if (idx >= 0) {
           messages[idx] = { ...messages[idx], msg_status: 'sent', wamid, _optimistic: true };
@@ -4336,6 +4390,7 @@
         showToast('Send failed: ' + e.message, 5000);
       }
 
+      _isSendingReply = false;
       sendBtn.disabled = false;
       input.disabled = false;
       input.focus();
