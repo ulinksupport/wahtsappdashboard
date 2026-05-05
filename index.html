@@ -2270,7 +2270,7 @@
     // ─────────────────────────────────────────────────────────────
     //  CONFIG  (no external SDK — uses Supabase REST API directly)
     // ─────────────────────────────────────────────────────────────
-    const PHONE_NUMBER_IDS = { travel: '1124849837372257', shield: '963260520198271' }; // old travel was: 104333479058480
+    const PHONE_NUMBER_IDS = { travel: '1124849837372257', shield: '963260520198271' }; // old travel: 104333479058480
 
     let SUPABASE_URL = '';
     let SUPABASE_KEY = '';   // anon key
@@ -2405,6 +2405,7 @@
     let convPollTimer = null;
     let msgPollTimer = null;
     let allMessagesBySession = {}; // session_id -> all fetched messages
+    let _searchSeq = 0; // incremented each time a new search starts; stale results are discarded
     let pendingScrollTs = null;     // created_at of message to scroll to after conv load
     let notifiedSessionTimes = {};  // session_id → last notified message created_at
     let notificationsReady = false;
@@ -2754,9 +2755,27 @@
     // ─────────────────────────────────────────────────────────────
     //  MESSAGE SEARCH RESULTS
     // ─────────────────────────────────────────────────────────────
-    function renderSearchResults(query) {
+    async function renderSearchResults(query) {
+      const seq = ++_searchSeq;
       const resultsEl = document.getElementById('search-results');
       const q = query.toLowerCase();
+
+      resultsEl.innerHTML = '<div class="search-result-header" style="color:#9ca3af;">Searching…</div>';
+
+      let msgData;
+      try {
+        // Query Supabase directly so search works across ALL messages, not just the cached 3000
+        msgData = await sbGet(
+          'messages?content=ilike.' + encodeURIComponent('*' + q + '*') +
+          '&select=session_id,content,role,created_at&order=created_at.desc&limit=100'
+        );
+      } catch (e) {
+        if (seq !== _searchSeq) return;
+        resultsEl.innerHTML = '<div style="padding:24px;text-align:center;color:#dc2626;font-size:13px;">Search failed: ' + escHtml(e.message) + '</div>';
+        return;
+      }
+
+      if (seq !== _searchSeq) return; // a newer search started while we awaited; discard
 
       // Map base session_id → conversation
       const baseToConv = {};
@@ -2765,21 +2784,13 @@
         if (!baseToConv[base]) baseToConv[base] = c;
       });
 
-      // Collect all messages that match across every sibling session
       const matches = [];
-      Object.keys(allMessagesBySession).forEach(sid => {
-        const base = sid.replace(/_(travel|shield)$/, '');
+      (msgData || []).forEach(m => {
+        const base = (m.session_id || '').replace(/_(travel|shield)$/, '');
         const conv = baseToConv[base];
         if (!conv) return;
-        (allMessagesBySession[sid] || []).forEach(m => {
-          if ((m.content || '').toLowerCase().includes(q)) {
-            matches.push({ msg: m, conv });
-          }
-        });
+        matches.push({ msg: m, conv });
       });
-
-      // Most recent first
-      matches.sort((a, b) => (b.msg.created_at || '') > (a.msg.created_at || '') ? 1 : -1);
 
       if (matches.length === 0) {
         resultsEl.innerHTML = '<div style="padding:24px;text-align:center;color:#999;font-size:14px;">No messages found.</div>';
@@ -2790,12 +2801,11 @@
       const todayStr = new Date().toLocaleDateString('en-SG', sgOpts);
       const yesterdayStr = new Date(Date.now() - 864e5).toLocaleDateString('en-SG', sgOpts);
 
-      resultsEl.innerHTML = '<div class="search-result-header">Messages (' + matches.length + ')</div>' +
+      resultsEl.innerHTML = '<div class="search-result-header">Messages (' + matches.length + (matches.length === 100 ? '+' : '') + ')</div>' +
         matches.map(({ msg, conv }) => {
           const name = conv.whatsapp_name || conv.customer_name || conv.phone_number || 'Unknown';
           const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
-          // Date/time label
           let timeLabel = '';
           if (msg.created_at) {
             const d = new Date(msg.created_at);
@@ -2809,7 +2819,6 @@
             }
           }
 
-          // Highlighted snippet — show context around the match
           const content = (msg.content || '').replace(/\n/g, ' ');
           const idx = content.toLowerCase().indexOf(q);
           const start = Math.max(0, idx - 25);
