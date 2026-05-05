@@ -2529,10 +2529,11 @@
     }
 
     async function fetchConversations() {
-      // Fetch ALL conversations and latest messages in parallel (paginated to bypass 1000-row limit)
+      // Fetch conversations (paginated) + only the most recent 3000 messages for latest-msg mapping.
+      // Fetching all messages is too slow as the table grows — 3000 covers all active sessions.
       const [convData, msgData] = await Promise.all([
         sbGetAll('conversations?select=*&order=created_at.desc'),
-        sbGetAll('messages?select=session_id,content,role,created_at&order=created_at.desc')
+        sbGet('messages?select=session_id,content,role,created_at&order=created_at.desc&limit=3000')
       ]);
 
       // Build latest-message map (one entry per session_id = most recent)
