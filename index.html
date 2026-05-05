@@ -4140,8 +4140,13 @@
             ...(components.length ? { components } : {})
           }
         });
+
+        // Await n8n so we can use the session_id it returns to open the chat panel
+        // with the message already present instead of racing against the Supabase insert.
+        let n8nSessionId = null;
         if (N8N_BASE_URL) {
-          await fetch(N8N_BASE_URL + '/webhook/outbound-new-chat', {
+          sendBtn.textContent = 'Opening chat…';
+          const n8nRes = await fetch(N8N_BASE_URL + '/webhook/outbound-new-chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -4150,11 +4155,25 @@
               template_language: _newChatSelectedTmpl.language || 'en',
               template_params: bodyParams.map(p => p.text)
             })
-          }).catch(() => {});
+          });
+          let n8nData = {};
+          try { n8nData = n8nRes.ok ? await n8nRes.json() : {}; } catch (_) {}
+          if (n8nData.success && n8nData.session_id) n8nSessionId = n8nData.session_id;
         }
+
         closeNewChatModal();
         showToast('Template sent to +' + phone);
-        setTimeout(loadConversations, 1500);
+
+        // Force-refresh the conversation list so the new chat record is present,
+        // then open it — selectConv awaits loadMessages, so the panel renders
+        // with the outbound message already there.
+        await fetchConversations();
+        if (n8nSessionId) {
+          const base = n8nSessionId.replace(/_(travel|shield)$/, '');
+          const target = conversations.find(c => c.session_id === n8nSessionId)
+            || conversations.find(c => c.session_id === base);
+          if (target) await selectConv(target.session_id);
+        }
       } catch (e) {
         const friendly = e.message.includes('132001')
           ? 'Template not found or not yet approved by Meta (#132001). Check the Templates panel — the template may still be PENDING or REJECTED.'
