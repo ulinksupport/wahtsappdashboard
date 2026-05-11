@@ -3990,6 +3990,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             session_id: baseSessionId,
+            conv_session_id: selectedConv.session_id,
             to_phone_number: toPhone,
             from_phone_number_id: phoneNumberId,
             message: content,
@@ -4355,6 +4356,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               session_id: baseSessionId,
+              conv_session_id: selectedConv.session_id,
               to_phone_number: selectedConv.phone_number,
               from_phone_number_id: phoneNumberId,
               message: text || ('📎 ' + capturedMedia.file.name),
@@ -4375,6 +4377,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               session_id: baseSessionId,
+              conv_session_id: selectedConv.session_id,
               to_phone_number: selectedConv.phone_number,
               from_phone_number_id: phoneNumberId,
               message: text
