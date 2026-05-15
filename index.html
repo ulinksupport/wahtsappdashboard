@@ -4555,6 +4555,9 @@
 
         section.innerHTML = `
           <div class="stats-grid" style="margin-bottom:16px;">${cards}</div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+            <button onclick="exportTemplateCsv()" style="background:#1d4ed8;color:white;border:none;border-radius:6px;padding:6px 16px;font-size:12px;cursor:pointer;font-weight:600;">&#11015; Export CSV</button>
+          </div>
           <div style="overflow-x:auto;margin-top:4px;">
             <table class="tmpl-table">
               <thead>
@@ -4575,6 +4578,29 @@
       } catch (e) {
         if (section) section.innerHTML = '<p style="font-size:13px;color:#dc2626;padding:4px;">Failed to load template stats: ' + escHtml(e.message) + '</p>';
       }
+    }
+
+    async function exportTemplateCsv() {
+      try {
+        const data = await sbGetAll('crm_template_logs?select=*&order=created_at.desc');
+        if (!data || data.length === 0) { alert('No data to export.'); return; }
+        const cols    = ['template_name','customer_name','phone_number','branch','tag','params','send_status','meta_message_id','created_at','sent_at','delivered_at','read_at','replied_at','reply_content','failure_code','failure_message','send_error'];
+        const headers = ['Template Name','Customer Name','Phone Number','Branch','Tag','Params','Status','Meta Message ID','Date Triggered','Sent At','Delivered At','Read At','Replied At','Reply Content','Failure Code','Failure Message','Send Error'];
+        const esc = v => {
+          if (v == null) return '';
+          const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+          return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        };
+        const rows = [headers.join(',')];
+        data.forEach(r => rows.push(cols.map(c => esc(c === 'params' && Array.isArray(r[c]) ? r[c].join(' | ') : r[c])).join(',')));
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'crm_template_logs_' + new Date().toISOString().slice(0,10) + '.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) { alert('Export failed: ' + e.message); }
     }
 
     function closeAnalytics() {
