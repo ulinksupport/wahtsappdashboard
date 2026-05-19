@@ -282,6 +282,34 @@
       font-weight: 500;
     }
 
+    .session-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 3px;
+    }
+
+    .session-tab {
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #f0f0f0;
+      color: #555;
+      border: 1px solid #ddd;
+      transition: background .15s;
+    }
+
+    .session-tab:hover {
+      background: #e0e0e0;
+    }
+
+    .session-tab.active {
+      background: #128c7e;
+      color: #fff;
+      border-color: #128c7e;
+    }
+
     .unread-count-badge {
       min-width: 20px;
       height: 20px;
@@ -2698,29 +2726,65 @@
       }
       noConvs.style.display = 'none';
 
-      items.innerHTML = filtered.map(c => {
-        // Name priority: whatsapp_name → customer_name → phone_number
-        const name = c.whatsapp_name || c.customer_name || c.phone_number || 'Unknown';
-        const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
-        const isSelected = c.session_id === selectedSessionId;
-        const hasUnread = isUnread(c.session_id);
-        const unreadMsgs = unreadIncomingCount(c.session_id);
-        const hasInactive = is24hrInactive(c.session_id);
+      // Group conversations by base phone number so the same customer with both
+      // a Travel and Shield session appears as ONE contact card, not two duplicates.
+      const phoneGroups = new Map();
+      filtered.forEach(c => {
+        const base = c.session_id.replace(/_(travel|shield)$/, '');
+        if (!phoneGroups.has(base)) phoneGroups.set(base, []);
+        phoneGroups.get(base).push(c);
+      });
 
-        // Use latest message from live map, fallback to stored last_message
-        const latestMsg = latestMsgMap[c.session_id];
+      // Within each group, sort members by latest activity (most recent first).
+      // The first member becomes the "primary" session for status/click-target.
+      const groups = [...phoneGroups.values()].map(members => {
+        members.sort((a, b) => {
+          const ta = latestMsgMap[a.session_id]?.created_at || a.created_at || '';
+          const tb = latestMsgMap[b.session_id]?.created_at || b.created_at || '';
+          return tb.localeCompare(ta);
+        });
+        return members;
+      });
+
+      // Sort groups by their primary session's latest activity
+      groups.sort((ga, gb) => {
+        const ta = latestMsgMap[ga[0].session_id]?.created_at || ga[0].created_at || '';
+        const tb = latestMsgMap[gb[0].session_id]?.created_at || gb[0].created_at || '';
+        return tb.localeCompare(ta);
+      });
+
+      items.innerHTML = groups.map(members => {
+        const primary = members[0];
+
+        // Name: prefer whatsapp_name, then customer_name, across all members
+        const name = members.map(c => c.whatsapp_name || c.customer_name).find(n => n)
+          || primary.phone_number || 'Unknown';
+        const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+
+        const isSelected = members.some(c => c.session_id === selectedSessionId);
+        const hasUnread = members.some(c => isUnread(c.session_id));
+        const unreadMsgs = members.reduce((sum, c) => sum + unreadIncomingCount(c.session_id), 0);
+        // Only show 24h-inactive badge when ALL sessions in the group are inactive
+        const hasInactive = members.every(c => is24hrInactive(c.session_id));
+
+        // Latest message across all sessions in the group
+        const latestMsg = members
+          .map(c => latestMsgMap[c.session_id])
+          .filter(Boolean)
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 
         const preview = latestMsg
           ? (latestMsg.content || '').replace(/\n/g, ' ').slice(0, 60)
-          : (c.last_message || '').replace(/\n/g, ' ').slice(0, 60) || 'No messages yet';
+          : (primary.last_message || '').replace(/\n/g, ' ').slice(0, 60) || 'No messages yet';
         const rolePrefix = latestMsg
           ? (latestMsg.role === 'user' ? '' : latestMsg.role === 'human_agent' ? '👤 You: ' : '🤖 Bot: ')
           : '';
 
-        // Relative time
         const timeStr = latestMsg?.created_at ? relTime(latestMsg.created_at) : '';
 
-        // Avatar color: red dot on top-right for unread
+        // Clicking the card opens the currently selected branch (if any), else the primary
+        const clickTarget = isSelected ? selectedSessionId : primary.session_id;
+
         const avatarHtml = `<div style="position:relative;flex-shrink:0;">
       <div class="conv-avatar">${escHtml(initials)}</div>
       ${hasUnread ? '<div style="position:absolute;top:0;right:0;width:11px;height:11px;border-radius:50%;background:#ef4444;border:2px solid #fff;"></div>' : ''}
@@ -2729,19 +2793,33 @@
         const inactiveBadge = hasInactive
           ? '<span class="badge badge-inactive">&#9201; 24h</span>'
           : '';
-        const statusBadge = c.route === 'human'
+
+        // Status badge from the primary (most recently active) session
+        const statusBadge = primary.route === 'human'
           ? '<span class="badge badge-human">Human</span>'
-          : c.status === 'escalated'
+          : primary.status === 'escalated'
             ? '<span class="badge badge-escalated">Escalated</span>'
             : '<span class="badge badge-active">Active</span>';
 
-        const branchBadge = c.branch === 'travel'
-          ? '<span class="badge badge-travel">Travel</span>'
-          : c.branch === 'shield'
-            ? '<span class="badge badge-shield">Shield</span>'
-            : '';
+        // Show a badge for every branch present in the group (e.g. Travel + Shield)
+        const branches = [...new Set(members.map(c => c.branch).filter(Boolean))];
+        const branchBadges = branches.map(b =>
+          b === 'travel' ? '<span class="badge badge-travel">Travel</span>'
+          : b === 'shield' ? '<span class="badge badge-shield">Shield</span>'
+          : ''
+        ).join('');
 
-        return `<div class="conv-item${isSelected ? ' selected' : ''}" onclick="selectConv('${escAttr(c.session_id)}')">
+        // If the customer has multiple sessions (e.g. Travel + Shield), show clickable
+        // tabs inside the card so agents can switch between them without searching.
+        const sessionTabs = members.length > 1
+          ? `<div class="session-tabs">${members.map(c => {
+              const isActiveTab = c.session_id === (isSelected ? selectedSessionId : primary.session_id);
+              const label = c.branch === 'travel' ? 'Travel' : c.branch === 'shield' ? 'Shield' : (c.branch || 'General');
+              return `<span class="session-tab${isActiveTab ? ' active' : ''}" onclick="event.stopPropagation();selectConv('${escAttr(c.session_id)}')">${escHtml(label)}</span>`;
+            }).join('')}</div>`
+          : '';
+
+        return `<div class="conv-item${isSelected ? ' selected' : ''}" onclick="selectConv('${escAttr(clickTarget)}')">
       ${avatarHtml}
       <div class="conv-info">
         <div class="conv-header">
@@ -2751,8 +2829,9 @@
             ${unreadMsgs > 0 ? `<span class="unread-count-badge">${Math.min(unreadMsgs, 99)}${unreadMsgs > 99 ? '+' : ''}</span>` : ''}
           </span>
         </div>
+        ${sessionTabs}
         <div class="conv-preview${hasUnread ? ' unread' : ''}">${rolePrefix}${escHtml(preview)}</div>
-        <div class="conv-meta">${branchBadge}${statusBadge}${inactiveBadge}</div>
+        <div class="conv-meta">${branchBadges}${statusBadge}${inactiveBadge}</div>
       </div>
     </div>`;
       }).join('');
