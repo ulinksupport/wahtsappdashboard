@@ -2000,7 +2000,7 @@
     <!-- Left: conversation list -->
     <div id="left-panel">
       <div id="search-bar">
-        <input id="search-input" type="text" placeholder="Search name, phone or messages…" oninput="renderConvList()" />
+        <input id="search-input" type="text" placeholder="Search name, phone or messages…" oninput="renderConvList(true)" />
       </div>
       <div id="filters">
         <!-- Brand row -->
@@ -2682,7 +2682,7 @@
       btn.textContent = `${label} (${count})`;
     }
 
-    function renderConvList() {
+    function renderConvList(fromSearch = false) {
       const query = document.getElementById('search-input').value.toLowerCase();
       const filtersEl = document.getElementById('filters');
       const convListEl = document.getElementById('conv-list');
@@ -2693,7 +2693,7 @@
         filtersEl.style.display = 'none';
         convListEl.style.display = 'none';
         searchResultsEl.classList.add('visible');
-        renderSearchResults(query);
+        if (fromSearch) renderSearchResults(query); // only re-fetch when user types, not on poll
         return;
       }
 
