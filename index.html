@@ -2545,23 +2545,50 @@
     }
 
     // ── Unread tracking ──────────────────────────────────────────
+    function baseSessionId(sessionId) {
+      return sessionId.replace(/_(travel|shield)$/, '');
+    }
+
     function getLastSeen(sessionId) {
-      return localStorage.getItem('lastSeen_' + sessionId) || '';
+      return localStorage.getItem('lastSeen_' + baseSessionId(sessionId)) || '';
     }
+
     function markSeen(sessionId, seenAt) {
-      localStorage.setItem('lastSeen_' + sessionId, seenAt || new Date().toISOString());
+      localStorage.setItem(
+        'lastSeen_' + baseSessionId(sessionId),
+        seenAt || new Date().toISOString()
+      );
     }
+
     function isUnread(sessionId) {
       const latest = latestMsgMap[sessionId];
-      if (!latest || latest.role !== 'user') return false;  // only customer messages count as unread
+      if (!latest || latest.role !== 'user') return false;
+
       return latest.created_at > getLastSeen(sessionId);
     }
+
     function unreadIncomingCount(sessionId) {
+      const base = baseSessionId(sessionId);
       const seenAt = getLastSeen(sessionId);
-      return (allMessagesBySession[sessionId] || []).filter(m =>
-        m.role === 'user' && m.created_at > seenAt
-      ).length;
+      const uniqueMessages = new Map();
+
+      Object.entries(allMessagesBySession).forEach(([storedSessionId, sessionMessages]) => {
+        if (baseSessionId(storedSessionId) !== base) return;
+
+        sessionMessages.forEach(m => {
+          if (m.role !== 'user' || m.created_at <= seenAt) return;
+
+          const key =
+            m.id ??
+            `${storedSessionId}|${m.role}|${m.created_at}|${m.content || ''}`;
+
+          uniqueMessages.set(key, m);
+        });
+      });
+
+      return uniqueMessages.size;
     }
+
     function unreadCount() {
       return conversations.filter(c => isUnread(c.session_id)).length;
     }
@@ -2824,7 +2851,7 @@
 
         const isSelected = members.some(c => c.session_id === selectedSessionId);
         const hasUnread = members.some(c => isUnread(c.session_id));
-        const unreadMsgs = members.reduce((sum, c) => sum + unreadIncomingCount(c.session_id), 0);
+        const unreadMsgs = unreadIncomingCount(primary.session_id);
         // Only show 24h-inactive badge when ALL sessions in the group are inactive
         const hasInactive = members.every(c => is24hrInactive(c.session_id));
 
@@ -3082,7 +3109,10 @@
           renderMessages();
 
           // Keep selected chat marked as read while it is open.
-          const latestIncoming = [...messages].reverse().find(m => m.role === 'user' && m.created_at)?.created_at;
+          const latestIncoming = [...messages]
+            .reverse()
+            .find(m => m.role === 'user' && m.created_at)?.created_at;
+
           markSeen(selectedSessionId, latestIncoming || new Date().toISOString());
           updateFilterCounts();
           renderConvList();
