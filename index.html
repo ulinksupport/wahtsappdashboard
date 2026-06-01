@@ -310,6 +310,11 @@
       border-color: #128c7e;
     }
 
+    .msg-time-small {
+      font-size: 12px;
+      color: #666;
+    }
+
     .unread-count-badge {
       min-width: 20px;
       height: 20px;
@@ -317,13 +322,12 @@
       border-radius: 999px;
       background: #25d366;
       color: #fff;
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 500;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 6px rgba(37, 211, 102, .35);
-      animation: unread-pop .22s ease-out;
+      margin-top: 2px;
     }
 
     @keyframes unread-pop {
@@ -424,10 +428,21 @@
     }
 
     @keyframes msg-highlight-flash {
-      0%   { box-shadow: none; }
-      20%  { box-shadow: 0 0 0 4px #fbbf24, 0 2px 16px rgba(251,191,36,.5); }
-      80%  { box-shadow: 0 0 0 2px rgba(251,191,36,.3); }
-      100% { box-shadow: none; }
+      0% {
+        box-shadow: none;
+      }
+
+      20% {
+        box-shadow: 0 0 0 4px #fbbf24, 0 2px 16px rgba(251, 191, 36, .5);
+      }
+
+      80% {
+        box-shadow: 0 0 0 2px rgba(251, 191, 36, .3);
+      }
+
+      100% {
+        box-shadow: none;
+      }
     }
 
     /* ── Message status ticks ────────────────────────────────── */
@@ -445,8 +460,13 @@
       flex-shrink: 0;
     }
 
-    .msg-status-sending   { color: #aaa; }
-    .msg-status-delivered { color: #aaa; }
+    .msg-status-sending {
+      color: #aaa;
+    }
+
+    .msg-status-delivered {
+      color: #aaa;
+    }
 
     .msg-status-failed {
       color: #dc2626;
@@ -607,8 +627,14 @@
       transition: all .15s;
     }
 
-    #close-chat-btn:hover:not(:disabled) { background: #b91c1c; }
-    #close-chat-btn:disabled { opacity: .5; cursor: default; }
+    #close-chat-btn:hover:not(:disabled) {
+      background: #b91c1c;
+    }
+
+    #close-chat-btn:disabled {
+      opacity: .5;
+      cursor: default;
+    }
 
     /* Toast notification */
     #toast {
@@ -780,8 +806,14 @@
       transition: background .15s;
     }
 
-    #attach-btn:hover { background: #d1d5db; }
-    #attach-btn:disabled { opacity: .5; cursor: default; }
+    #attach-btn:hover {
+      background: #d1d5db;
+    }
+
+    #attach-btn:disabled {
+      opacity: .5;
+      cursor: default;
+    }
 
     #media-preview-bar {
       display: none;
@@ -793,7 +825,9 @@
       gap: 10px;
     }
 
-    #media-preview-bar.visible { display: flex; }
+    #media-preview-bar.visible {
+      display: flex;
+    }
 
     #media-preview-thumb {
       max-width: 72px;
@@ -846,7 +880,10 @@
       transition: background .15s;
     }
 
-    #media-preview-clear:hover { background: #e5e7eb; color: #374151; }
+    #media-preview-clear:hover {
+      background: #e5e7eb;
+      color: #374151;
+    }
 
     #human-mode-notice {
       background: #fef9c3;
@@ -1574,7 +1611,9 @@
       white-space: nowrap;
     }
 
-    .tmpl-edit-btn:hover { background: #fef3c7; }
+    .tmpl-edit-btn:hover {
+      background: #fef3c7;
+    }
 
     .tmpl-delete-btn {
       padding: 5px 10px;
@@ -1589,7 +1628,9 @@
       white-space: nowrap;
     }
 
-    .tmpl-delete-btn:hover { background: #fee2e2; }
+    .tmpl-delete-btn:hover {
+      background: #fee2e2;
+    }
 
     .tmpl-empty {
       text-align: center;
@@ -1713,7 +1754,9 @@
       transition: background .15s;
     }
 
-    .tmpl-btn-remove:hover { background: #fee2e2; }
+    .tmpl-btn-remove:hover {
+      background: #fee2e2;
+    }
 
     .tmpl-add-btn-link {
       font-size: 12px;
@@ -1729,8 +1772,15 @@
       gap: 3px;
     }
 
-    .tmpl-add-btn-link:hover { text-decoration: underline; }
-    .tmpl-add-btn-link:disabled { opacity: .4; cursor: default; text-decoration: none; }
+    .tmpl-add-btn-link:hover {
+      text-decoration: underline;
+    }
+
+    .tmpl-add-btn-link:disabled {
+      opacity: .4;
+      cursor: default;
+      text-decoration: none;
+    }
 
     .tmpl-form textarea {
       resize: vertical;
@@ -2000,7 +2050,8 @@
     <!-- Left: conversation list -->
     <div id="left-panel">
       <div id="search-bar">
-        <input id="search-input" type="text" placeholder="Search name, phone or messages…" oninput="renderConvList(true)" />
+        <input id="search-input" type="text" placeholder="Search name, phone or messages…"
+          oninput="renderConvList(true)" />
       </div>
       <div id="filters">
         <!-- Brand row -->
@@ -2056,7 +2107,8 @@
               <button id="btn-ai-mode" class="mode-btn active" onclick="setModeAI()">🤖 AI Active</button>
               <button id="btn-human-mode" class="mode-btn" onclick="setModeHuman()">👤 Human Active</button>
             </div>
-            <button id="close-chat-btn" onclick="closeChat()" title="Close this conversation and notify ops">&#10005; Close Chat</button>
+            <button id="close-chat-btn" onclick="closeChat()" title="Close this conversation and notify ops">&#10005;
+              Close Chat</button>
           </div>
         </div>
 
@@ -2089,7 +2141,8 @@
           <input type="file" id="media-file-input"
             accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
             style="display:none" onchange="handleFileInputChange(event)" />
-          <button id="attach-btn" onclick="document.getElementById('media-file-input').click()" title="Attach image or document">&#128206;</button>
+          <button id="attach-btn" onclick="document.getElementById('media-file-input').click()"
+            title="Attach image or document">&#128206;</button>
           <textarea id="reply-input" rows="1" placeholder="Type a message…" onkeydown="replyKeydown(event)"
             oninput="autoResize(this)"></textarea>
           <button id="send-btn" onclick="sendReply()" title="Send">
@@ -2153,7 +2206,8 @@
 
       <!-- CRM Template Analytics -->
       <p class="analytics-section-title" style="margin-top:28px;">CRM Template Analytics</p>
-      <div id="tmpl-analytics-section" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:18px;">
+      <div id="tmpl-analytics-section"
+        style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:18px;">
         <div style="color:#6b7280;font-size:13px;">Loading template stats…</div>
       </div>
     </div>
@@ -2222,10 +2276,12 @@
           <textarea id="tmpl-body" rows="4"
             placeholder="Dear {{1}}, your policy {{2}} is due for renewal on {{3}}. Please contact us to renew."
             oninput="updateBodyExamples()"></textarea>
-          <div id="tmpl-body-examples" style="display:none;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-top:-8px;margin-bottom:14px;">
+          <div id="tmpl-body-examples"
+            style="display:none;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-top:-8px;margin-bottom:14px;">
             <div style="background:#f9fafb;padding:10px 14px;border-bottom:1px solid #e5e7eb;">
               <p style="font-size:13px;font-weight:700;color:#111827;margin-bottom:2px;">Variable samples</p>
-              <p style="font-size:12px;color:#6b7280;margin:0;">Include samples of all variables in your message to help Meta review your template. Remember not to include any real customer information.</p>
+              <p style="font-size:12px;color:#6b7280;margin:0;">Include samples of all variables in your message to help
+                Meta review your template. Remember not to include any real customer information.</p>
             </div>
             <div style="padding:12px 14px;">
               <p style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">Body</p>
@@ -2237,13 +2293,17 @@
 
           <label>Buttons <span style="font-weight:400;color:#999;">(optional)</span></label>
           <div class="tmpl-btn-type-row">
-            <label><input type="radio" name="tmpl-btn-type" value="none" checked onchange="updateBtnSection()"> None</label>
-            <label><input type="radio" name="tmpl-btn-type" value="quick_reply" onchange="updateBtnSection()"> Quick Reply <small style="color:#6b7280;">(up to 3)</small></label>
-            <label><input type="radio" name="tmpl-btn-type" value="cta" onchange="updateBtnSection()"> URL / Phone <small style="color:#6b7280;">(Call to Action)</small></label>
+            <label><input type="radio" name="tmpl-btn-type" value="none" checked onchange="updateBtnSection()">
+              None</label>
+            <label><input type="radio" name="tmpl-btn-type" value="quick_reply" onchange="updateBtnSection()"> Quick
+              Reply <small style="color:#6b7280;">(up to 3)</small></label>
+            <label><input type="radio" name="tmpl-btn-type" value="cta" onchange="updateBtnSection()"> URL / Phone
+              <small style="color:#6b7280;">(Call to Action)</small></label>
           </div>
           <div id="tmpl-btn-section" style="display:none;">
             <div id="tmpl-btn-list"></div>
-            <button type="button" class="tmpl-add-btn-link" id="tmpl-add-btn" onclick="addTemplateButton()">&#43; Add Button</button>
+            <button type="button" class="tmpl-add-btn-link" id="tmpl-add-btn" onclick="addTemplateButton()">&#43; Add
+              Button</button>
           </div>
 
           <div id="tmpl-create-msg" class="tmpl-msg"></div>
@@ -2270,7 +2330,8 @@
         </select>
       </div>
       <div class="new-chat-field">
-        <label>Template Message <small style="color:#6b7280">— only approved templates can start a new conversation</small></label>
+        <label>Template Message <small style="color:#6b7280">— only approved templates can start a new
+            conversation</small></label>
         <div class="send-tmpl-list" id="new-chat-tmpl-list" style="max-height:220px;overflow-y:auto;"></div>
       </div>
       <div class="send-tmpl-params" id="new-chat-tmpl-params" style="display:none;margin-bottom:10px;"></div>
@@ -2470,7 +2531,7 @@
         try {
           const n = new Notification('💬 ' + name, { body: preview, tag: c.session_id });
           n.onclick = () => { window.focus(); selectConv(c.session_id); n.close(); };
-        } catch (_) {}
+        } catch (_) { }
       });
     }
 
@@ -2787,7 +2848,6 @@
 
         const avatarHtml = `<div style="position:relative;flex-shrink:0;">
       <div class="conv-avatar">${escHtml(initials)}</div>
-      ${hasUnread ? '<div style="position:absolute;top:0;right:0;width:11px;height:11px;border-radius:50%;background:#ef4444;border:2px solid #fff;"></div>' : ''}
     </div>`;
 
         const inactiveBadge = hasInactive
@@ -2805,18 +2865,18 @@
         const branches = [...new Set(members.map(c => c.branch).filter(Boolean))];
         const branchBadges = branches.map(b =>
           b === 'travel' ? '<span class="badge badge-travel">Travel</span>'
-          : b === 'shield' ? '<span class="badge badge-shield">Shield</span>'
-          : ''
+            : b === 'shield' ? '<span class="badge badge-shield">Shield</span>'
+              : ''
         ).join('');
 
         // If the customer has multiple sessions (e.g. Travel + Shield), show clickable
         // tabs inside the card so agents can switch between them without searching.
         const sessionTabs = members.length > 1
           ? `<div class="session-tabs">${members.map(c => {
-              const isActiveTab = c.session_id === (isSelected ? selectedSessionId : primary.session_id);
-              const label = c.branch === 'travel' ? 'Travel' : c.branch === 'shield' ? 'Shield' : (c.branch || 'General');
-              return `<span class="session-tab${isActiveTab ? ' active' : ''}" onclick="event.stopPropagation();selectConv('${escAttr(c.session_id)}')">${escHtml(label)}</span>`;
-            }).join('')}</div>`
+            const isActiveTab = c.session_id === (isSelected ? selectedSessionId : primary.session_id);
+            const label = c.branch === 'travel' ? 'Travel' : c.branch === 'shield' ? 'Shield' : (c.branch || 'General');
+            return `<span class="session-tab${isActiveTab ? ' active' : ''}" onclick="event.stopPropagation();selectConv('${escAttr(c.session_id)}')">${escHtml(label)}</span>`;
+          }).join('')}</div>`
           : '';
 
         return `<div class="conv-item${isSelected ? ' selected' : ''}" onclick="selectConv('${escAttr(clickTarget)}')">
@@ -2997,13 +3057,13 @@
             if (seenIds.has(m.id)) return;   // exact duplicate row
             seenIds.add(m.id);
           }
-          
+
           // Fuzzy timestamp (group into 60-second buckets for deduplication)
           // This prevents duplicates if n8n webhook and dashboard both save to Supabase
           const ts = m.created_at ? new Date(m.created_at).getTime() : 0;
-          const fuzzyMinute = Math.floor(ts / 60000); 
+          const fuzzyMinute = Math.floor(ts / 60000);
           const key = (m.role || '') + '|' + fuzzyMinute + '|' + (m.content || '');
-          
+
           if (!dedupedByKey.has(key)) {
             dedupedByKey.set(key, m);
           } else {
@@ -3161,9 +3221,9 @@
 
         let statusIcon = '';
         if (isOutbound) {
-          if (status === 'failed')         statusIcon = '<span class="msg-status msg-status-failed" title="Failed — message not delivered">✕</span>';
+          if (status === 'failed') statusIcon = '<span class="msg-status msg-status-failed" title="Failed — message not delivered">✕</span>';
           else if (status === 'delivered') statusIcon = '<span class="msg-status msg-status-delivered" title="Delivered">✓✓</span>';
-          else if (status === 'sending')   statusIcon = '<span class="msg-status msg-status-sending" title="Sending…">⌛</span>';
+          else if (status === 'sending') statusIcon = '<span class="msg-status msg-status-sending" title="Sending…">⌛</span>';
           // sent/read: no icon — we don't track these
         }
 
@@ -3568,9 +3628,9 @@
       return json;
     }
 
-    async function metaGet(path)        { return _metaProxy('GET',    path); }
-    async function metaPost(path, body)  { return _metaProxy('POST',   path, body); }
-    async function metaDelete(path)      { return _metaProxy('DELETE', path); }
+    async function metaGet(path) { return _metaProxy('GET', path); }
+    async function metaPost(path, body) { return _metaProxy('POST', path, body); }
+    async function metaDelete(path) { return _metaProxy('DELETE', path); }
 
     // ─────────────────────────────────────────────────────────────
     //  TEMPLATE CACHE
@@ -3675,9 +3735,9 @@
       if (!t) return;
       const comps = t.components || [];
       const headerComp = comps.find(c => c.type === 'HEADER');
-      const bodyComp   = comps.find(c => c.type === 'BODY');
+      const bodyComp = comps.find(c => c.type === 'BODY');
       const footerComp = comps.find(c => c.type === 'FOOTER');
-      const btnsComp   = comps.find(c => c.type === 'BUTTONS');
+      const btnsComp = comps.find(c => c.type === 'BUTTONS');
 
       // Switch to Create tab and fill fields
       switchTmplTab('create');
@@ -3836,13 +3896,13 @@
 
     function updateBtnSubtype(sel, itemId) {
       const item = document.getElementById(itemId);
-      const urlInput   = item.querySelector('.tmpl-btn-url');
+      const urlInput = item.querySelector('.tmpl-btn-url');
       const phoneInput = item.querySelector('.tmpl-btn-phone');
       if (sel.value === 'url') {
-        urlInput.style.display   = 'block';
+        urlInput.style.display = 'block';
         phoneInput.style.display = 'none';
       } else {
-        urlInput.style.display   = 'none';
+        urlInput.style.display = 'none';
         phoneInput.style.display = 'block';
       }
     }
@@ -4243,7 +4303,7 @@
             })
           });
           let n8nData = {};
-          try { n8nData = n8nRes.ok ? await n8nRes.json() : {}; } catch (_) {}
+          try { n8nData = n8nRes.ok ? await n8nRes.json() : {}; } catch (_) { }
           if (n8nData.success && n8nData.session_id) n8nSessionId = n8nData.session_id;
         }
 
@@ -4578,14 +4638,14 @@
         }
 
         // Summary counts
-        const total     = data.length;
-        const delivered = data.filter(r => ['delivered','read'].includes(r.send_status)).length;
-        const read      = data.filter(r => r.send_status === 'read').length;
-        const failed    = data.filter(r => r.send_status === 'failed').length;
-        const noPhone   = data.filter(r => r.send_status === 'no_phone').length;
-        const replied   = data.filter(r => r.replied_at).length;
-        const outbound  = data.filter(r => ['queued','sent','delivered','read'].includes(r.send_status)).length;
-        const noReply   = data.filter(r => !r.replied_at && ['sent','delivered','read'].includes(r.send_status)).length;
+        const total = data.length;
+        const delivered = data.filter(r => ['delivered', 'read'].includes(r.send_status)).length;
+        const read = data.filter(r => r.send_status === 'read').length;
+        const failed = data.filter(r => r.send_status === 'failed').length;
+        const noPhone = data.filter(r => r.send_status === 'no_phone').length;
+        const replied = data.filter(r => r.replied_at).length;
+        const outbound = data.filter(r => ['queued', 'sent', 'delivered', 'read'].includes(r.send_status)).length;
+        const noReply = data.filter(r => !r.replied_at && ['sent', 'delivered', 'read'].includes(r.send_status)).length;
         const replyRate = outbound > 0 ? Math.round(replied / outbound * 100) : 0;
 
         // Per-template breakdown
@@ -4594,24 +4654,24 @@
           const name = r.template_name || 'unknown';
           if (!byTemplate[name]) byTemplate[name] = { sent: 0, delivered: 0, read: 0, failed: 0, noPhone: 0, replied: 0, noReply: 0 };
           const t = byTemplate[name];
-          if (['queued','sent'].includes(r.send_status)) t.sent++;
+          if (['queued', 'sent'].includes(r.send_status)) t.sent++;
           if (r.send_status === 'delivered') { t.sent++; t.delivered++; }
-          if (r.send_status === 'read')      { t.sent++; t.delivered++; t.read++; }
-          if (r.send_status === 'failed')    t.failed++;
-          if (r.send_status === 'no_phone')  t.noPhone++;
+          if (r.send_status === 'read') { t.sent++; t.delivered++; t.read++; }
+          if (r.send_status === 'failed') t.failed++;
+          if (r.send_status === 'no_phone') t.noPhone++;
           if (r.replied_at) t.replied++;
-          if (!r.replied_at && ['sent','delivered','read'].includes(r.send_status)) t.noReply++;
+          if (!r.replied_at && ['sent', 'delivered', 'read'].includes(r.send_status)) t.noReply++;
         });
 
         const cards = [
-          { value: total,       label: 'Total Triggered', color: '#075e54' },
-          { value: outbound,    label: 'Sent Out',        color: '#15803d' },
-          { value: delivered,   label: 'Delivered',       color: '#1d4ed8' },
-          { value: read,        label: 'Read',            color: '#7c3aed' },
-          { value: replied,     label: 'Replied',         color: '#0891b2' },
-          { value: noReply,     label: 'No Reply',        color: '#b45309' },
+          { value: total, label: 'Total Triggered', color: '#075e54' },
+          { value: outbound, label: 'Sent Out', color: '#15803d' },
+          { value: delivered, label: 'Delivered', color: '#1d4ed8' },
+          { value: read, label: 'Read', color: '#7c3aed' },
+          { value: replied, label: 'Replied', color: '#0891b2' },
+          { value: noReply, label: 'No Reply', color: '#b45309' },
           { value: failed + noPhone, label: 'Failed/No Phone', color: '#dc2626' },
-          { value: replyRate + '%',  label: 'Reply Rate',      color: '#059669' },
+          { value: replyRate + '%', label: 'Reply Rate', color: '#059669' },
         ].map(s => `<div class="stat-card"><div class="stat-value" style="color:${s.color}">${typeof s.value === 'number' ? s.value.toLocaleString() : s.value}</div><div class="stat-label">${s.label}</div></div>`).join('');
 
         const tableRows = Object.entries(byTemplate)
@@ -4663,8 +4723,8 @@
       try {
         const data = await sbGetAll('crm_template_logs?select=*&order=created_at.desc');
         if (!data || data.length === 0) { alert('No data to export.'); return; }
-        const cols    = ['template_name','customer_name','phone_number','branch','tag','params','send_status','meta_message_id','created_at','sent_at','delivered_at','read_at','replied_at','reply_content','failure_code','failure_message','send_error'];
-        const headers = ['Template Name','Customer Name','Phone Number','Branch','Tag','Params','Status','Meta Message ID','Date Triggered','Sent At','Delivered At','Read At','Replied At','Reply Content','Failure Code','Failure Message','Send Error'];
+        const cols = ['template_name', 'customer_name', 'phone_number', 'branch', 'tag', 'params', 'send_status', 'meta_message_id', 'created_at', 'sent_at', 'delivered_at', 'read_at', 'replied_at', 'reply_content', 'failure_code', 'failure_message', 'send_error'];
+        const headers = ['Template Name', 'Customer Name', 'Phone Number', 'Branch', 'Tag', 'Params', 'Status', 'Meta Message ID', 'Date Triggered', 'Sent At', 'Delivered At', 'Read At', 'Replied At', 'Reply Content', 'Failure Code', 'Failure Message', 'Send Error'];
         const esc = v => {
           if (v == null) return '';
           const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
@@ -4673,10 +4733,10 @@
         const rows = [headers.join(',')];
         data.forEach(r => rows.push(cols.map(c => esc(c === 'params' && Array.isArray(r[c]) ? r[c].join(' | ') : r[c])).join(',')));
         const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href     = url;
-        a.download = 'crm_template_logs_' + new Date().toISOString().slice(0,10) + '.csv';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'crm_template_logs_' + new Date().toISOString().slice(0, 10) + '.csv';
         a.click();
         URL.revokeObjectURL(url);
       } catch (e) { alert('Export failed: ' + e.message); }
