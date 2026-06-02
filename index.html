@@ -39,6 +39,24 @@
       font-weight: 600;
     }
 
+    .change-dashboard-btn {
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, .4);
+      background: rgba(255, 255, 255, .14);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background .15s, border-color .15s;
+    }
+
+    .change-dashboard-btn:hover {
+      background: rgba(255, 255, 255, .24);
+      border-color: rgba(255, 255, 255, .65);
+    }
+
     #topbar .dot {
       width: 10px;
       height: 10px;
@@ -2022,6 +2040,12 @@
   <div id="topbar">
     <div class="dot"></div>
     <h1>WhatsApp Chatbot Dashboard</h1>
+
+    <button class="change-dashboard-btn"
+      onclick="window.location.assign('https://ulink-social-media-platform.vercel.app/')">
+      &#8644; Change Dashboard
+    </button>
+
     <span id="connection-status">Not connected</span>
     <div style="margin-left:auto; display:flex; gap: 8px; align-items: center;">
       <input type="month" id="export-month-picker"
