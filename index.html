@@ -2680,7 +2680,7 @@
       // Fetching all messages is too slow as the table grows — 3000 covers all active sessions.
       const [convData, msgData] = await Promise.all([
         sbGetAll('conversations?select=*&order=created_at.desc'),
-        sbGet('messages?select=session_id,content,role,created_at&order=created_at.desc&limit=3000')
+        sbGet('messages?select=session_id,content,role,created_at,media_url,media_type,media_filename&order=created_at.desc&limit=3000')
       ]);
 
       // Build latest-message map (one entry per session_id = most recent)
@@ -2963,7 +2963,7 @@
         // Query Supabase directly so search works across ALL messages, not just the cached 3000
         msgData = await sbGet(
           'messages?content=ilike.' + encodeURIComponent('*' + q + '*') +
-          '&select=session_id,content,role,created_at&order=created_at.desc&limit=100'
+          '&select=session_id,content,role,created_at,media_url,media_type,media_filename&order=created_at.desc&limit=100'
         );
       } catch (e) {
         if (seq !== _searchSeq) return;
