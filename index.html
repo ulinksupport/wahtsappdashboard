@@ -587,6 +587,138 @@
       background: #0e7490;
     }
 
+    /* Export Month button with compact dropdown */
+    .export-month-group {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+    }
+
+    #export-month-btn {
+      border-radius: 20px 0 0 20px;
+      padding-right: 11px;
+    }
+
+    .export-month-arrow {
+      width: 30px;
+      border: none;
+      border-left: 1px solid rgba(255, 255, 255, .3);
+      border-radius: 0 20px 20px 0;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: background .15s;
+    }
+
+    .export-month-arrow:hover {
+      background: #1d4ed8;
+    }
+
+    #export-month-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 205px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
+      display: none;
+      z-index: 100;
+    }
+
+    #export-month-menu.open {
+      display: block;
+    }
+
+    #export-month-menu label {
+      display: block;
+      margin-bottom: 7px;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    #export-month-picker {
+      width: 100%;
+      padding: 7px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: #fff;
+      color: #111827;
+      font-size: 13px;
+      outline: none;
+    }
+
+    /* Custom Export Chat button with date dropdown */
+    .custom-export-group {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+    }
+
+    #custom-export-btn {
+      border-radius: 20px 0 0 20px;
+      padding-right: 11px;
+    }
+
+    .custom-export-arrow {
+      width: 30px;
+      border: none;
+      border-left: 1px solid rgba(255, 255, 255, .3);
+      border-radius: 0 20px 20px 0;
+      background: #9333ea;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: background .15s;
+    }
+
+    .custom-export-arrow:hover {
+      background: #7e22ce;
+    }
+
+    #custom-export-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 215px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
+      display: none;
+      z-index: 100;
+    }
+
+    #custom-export-menu.open {
+      display: block;
+    }
+
+    #custom-export-menu label {
+      display: block;
+      margin-bottom: 7px;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    #custom-export-date-picker {
+      width: 100%;
+      padding: 7px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: #fff;
+      color: #111827;
+      font-size: 13px;
+      outline: none;
+    }
+
     /* AI/Human mode toggle */
     #mode-toggle {
       display: flex;
@@ -2048,13 +2180,42 @@
 
     <span id="connection-status">Not connected</span>
     <div style="margin-left:auto; display:flex; gap: 8px; align-items: center;">
-      <input type="month" id="export-month-picker"
-        style="padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); color: #fff; font-size: 13px; outline: none; color-scheme: dark;" />
-      <button id="export-month-btn" class="header-btn" onclick="exportMonthlyToN8n()"
-        title="Export selected month to n8n Webhook" style="background: #2563eb;">Export Month</button>
+      <div class="export-month-group" id="export-month-group">
+        <button id="export-month-btn" class="header-btn" onclick="exportMonthlyToN8n()"
+          title="Export selected month to n8n Webhook" style="background: #2563eb;">
+          Export Month
+        </button>
+
+        <button class="export-month-arrow" type="button" onclick="toggleExportMonthMenu(event)"
+          title="Select export month">
+          &#9662;
+        </button>
+
+        <div id="export-month-menu" onclick="event.stopPropagation()">
+          <label for="export-month-picker">Select export month</label>
+          <input type="month" id="export-month-picker" onchange="closeExportMonthMenu()" />
+        </div>
+      </div>
       <button id="export-all-btn" class="header-btn" onclick="exportAllChats()"
         title="Export all conversations for monthly backup" style="background: #0e7490;">&#11015; Backup All</button>
     </div>
+    <div class="custom-export-group" id="custom-export-group">
+      <button id="custom-export-btn" class="header-btn" onclick="exportCustomChatToN8n()" title="Select a date first"
+        style="background: #9333ea;" disabled>
+        Custom Export Chat
+      </button>
+
+      <button class="custom-export-arrow" type="button" onclick="toggleCustomExportMenu(event)"
+        title="Select export date">
+        &#9662;
+      </button>
+
+      <div id="custom-export-menu" onclick="event.stopPropagation()">
+        <label for="custom-export-date-picker">Select export date</label>
+        <input type="date" id="custom-export-date-picker" onchange="handleCustomExportDateChange()" />
+      </div>
+    </div>
+
     <button id="analytics-open-btn" onclick="toggleAnalytics()"
       style="padding:7px 14px;border-radius:20px;border:none;background:#7c3aed;color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">&#128200;
       Analytics</button>
@@ -3505,6 +3666,36 @@
       btn.textContent = '↓ Backup All';
     }
 
+
+    // ─────────────────────────────────────────────────────────────
+    //  EXPORT MONTH DROPDOWN
+    // ─────────────────────────────────────────────────────────────
+    function toggleExportMonthMenu(event) {
+      event.stopPropagation();
+
+      // Close the custom date dropdown if it is currently open
+      closeCustomExportMenu();
+
+      document.getElementById('export-month-menu').classList.toggle('open');
+    }
+
+    function closeExportMonthMenu() {
+      document.getElementById('export-month-menu').classList.remove('open');
+    }
+
+    document.addEventListener('click', function (event) {
+      const exportMonthGroup = document.getElementById('export-month-group');
+      const customExportGroup = document.getElementById('custom-export-group');
+
+      if (exportMonthGroup && !exportMonthGroup.contains(event.target)) {
+        closeExportMonthMenu();
+      }
+
+      if (customExportGroup && !customExportGroup.contains(event.target)) {
+        closeCustomExportMenu();
+      }
+    });
+
     // ─────────────────────────────────────────────────────────────
     //  EXPORT MONTHLY TO n8n
     // ─────────────────────────────────────────────────────────────
@@ -3603,6 +3794,253 @@
 
       btn.disabled = false;
       btn.textContent = 'Export Month';
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  CUSTOM EXPORT CHAT DROPDOWN
+    // ─────────────────────────────────────────────────────────────
+    function toggleCustomExportMenu(event) {
+      event.stopPropagation();
+
+      // Close the month dropdown if it is currently open
+      closeExportMonthMenu();
+
+      document.getElementById('custom-export-menu').classList.toggle('open');
+    }
+
+    function closeCustomExportMenu() {
+      document.getElementById('custom-export-menu').classList.remove('open');
+    }
+
+
+    function handleCustomExportDateChange() {
+      const selectedDate =
+        document.getElementById('custom-export-date-picker').value;
+
+      const btn =
+        document.getElementById('custom-export-btn');
+
+      if (selectedDate) {
+        btn.disabled = false;
+        btn.title = 'Export chats for ' + selectedDate;
+      } else {
+        btn.disabled = true;
+        btn.title = 'Select a date first';
+      }
+
+      closeCustomExportMenu();
+    }
+
+
+    // ─────────────────────────────────────────────────────────────
+    //  CUSTOM EXPORT CHAT TO n8n — STAGE 2 DATA PAYLOAD TEST
+    // ─────────────────────────────────────────────────────────────
+
+    // Convert the stored ISO timestamp into a Singapore date: YYYY-MM-DD
+    function getSingaporeDateKey(isoTimestamp) {
+      if (!isoTimestamp) return '';
+
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Singapore',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date(isoTimestamp));
+    }
+
+    async function exportCustomChatToN8n() {
+      const selectedDate =
+        document.getElementById('custom-export-date-picker').value;
+
+      // Safety check: webhook must never execute without a selected date
+      if (!selectedDate) {
+        showToast('Please select a date first.');
+        return;
+      }
+
+      if (!conversations.length) {
+        showToast('No conversations available to export.');
+        return;
+      }
+
+      const btn = document.getElementById('custom-export-btn');
+
+      btn.disabled = true;
+      btn.textContent = 'Preparing…';
+
+      try {
+        if (!N8N_BASE_URL) {
+          throw new Error('n8n Base URL is not configured in Settings.');
+        }
+
+        const exportData = [];
+        const processedSessions = new Set();
+
+        // Only export the Singlife WhatsApp line.
+        // In this dashboard, the Singlife line uses branch = "travel".
+        const singlifeConversations = conversations.filter(c => {
+          return (c.branch || '').toLowerCase() === 'travel';
+        });
+
+        let processed = 0;
+
+        for (const c of singlifeConversations) {
+          // Messages are stored using the base session ID
+          const baseSessionId =
+            c.session_id.replace(/_(travel|shield)$/, '');
+
+          // Avoid exporting the same chat twice
+          if (processedSessions.has(baseSessionId)) {
+            continue;
+          }
+
+          processedSessions.add(baseSessionId);
+
+          const msgs = await sbGetAll(
+            'messages?session_id=eq.' +
+            encodeURIComponent(baseSessionId) +
+            '&select=*&order=created_at.asc'
+          );
+
+          const customerName =
+            c.whatsapp_name ||
+            c.customer_name ||
+            c.phone_number ||
+            'Unknown';
+
+          const phone =
+            c.phone_number ||
+            baseSessionId;
+
+          for (const m of msgs) {
+            if (!m.created_at) continue;
+
+            // Export only messages matching the selected date in Singapore time
+            if (getSingaporeDateKey(m.created_at) !== selectedDate) {
+              continue;
+            }
+
+            const roleLabel =
+              m.role === 'user'
+                ? 'Customer'
+                : m.role === 'assistant'
+                  ? 'Bot'
+                  : m.role === 'human_agent'
+                    ? 'Human Agent'
+                    : (m.role || 'Unknown');
+
+            exportData.push({
+              "Session ID": baseSessionId,
+              "Customer Name": customerName,
+              "Phone": phone,
+              "Branch": "Singlife",
+              "Timestamp": m.created_at,
+              "Role": roleLabel,
+              "Message Content": m.content || '',
+              "Media URL": m.media_url || '',
+              "Media Type": m.media_type || '',
+              "Original Media Filename": m.media_filename || ''
+            });
+          }
+
+          processed++;
+
+          btn.textContent =
+            'Preparing ' +
+            processed +
+            '/' +
+            singlifeConversations.length +
+            '…';
+        }
+
+        if (!exportData.length) {
+          showToast(
+            'No Singlife messages found for ' + selectedDate + '.',
+            5000
+          );
+
+          btn.disabled = false;
+          btn.textContent = 'Custom Export Chat';
+
+          return;
+        }
+
+        btn.textContent = 'Sending…';
+
+        const response = await fetch(
+          N8N_BASE_URL + '/webhook/custom-export-chat',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              export_date: selectedDate,
+              timezone: 'Asia/Singapore',
+              audit_folder_name: 'Singlife WA Audit',
+              data: exportData
+            })
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+
+          throw new Error(
+            'HTTP ' +
+            response.status +
+            (errorText ? ': ' + errorText.slice(0, 300) : '')
+          );
+        }
+
+        const zipBlob = await response.blob();
+
+        const disposition =
+          response.headers.get('Content-Disposition') || '';
+
+        const filenameMatch =
+          disposition.match(/filename="?([^"]+)"?/i);
+
+        const zipFilename =
+          filenameMatch && filenameMatch[1]
+            ? filenameMatch[1]
+            : 'Singlife_WA_Audit_' + selectedDate + '.zip';
+
+        const downloadUrl =
+          URL.createObjectURL(zipBlob);
+
+        const downloadLink =
+          document.createElement('a');
+
+        downloadLink.href =
+          downloadUrl;
+
+        downloadLink.download =
+          zipFilename;
+
+        document.body.appendChild(downloadLink);
+
+        downloadLink.click();
+
+        document.body.removeChild(downloadLink);
+
+        URL.revokeObjectURL(downloadUrl);
+
+        closeCustomExportMenu();
+
+        showToast(
+          '✓ Singlife WA Audit ZIP downloaded for ' +
+          selectedDate,
+          6000
+        );
+
+      } catch (error) {
+        alert('Custom export failed: ' + error.message);
+      }
+
+      // Re-enable because a date remains selected
+      btn.disabled = false;
+      btn.textContent = 'Custom Export Chat';
     }
 
     // ─────────────────────────────────────────────────────────────
