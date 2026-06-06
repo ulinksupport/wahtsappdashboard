@@ -4622,8 +4622,10 @@
           expandedBody = expandedBody.replace(new RegExp('\\{\\{' + (i + 1) + '\\}\\}', 'g'), p.text);
         });
         const paramValues = bodyParams.map(p => p.text);
-        const content = '[Template: ' + _selectedTmpl.name + '] ' +
-          (expandedBody || paramValues.join(', '));
+        const _tmplBtns = ((_selectedTmpl.components || []).find(c => c.type === 'BUTTONS')?.buttons || []).map(b => b.text).filter(Boolean);
+        const content = '[Template: ' + _selectedTmpl.name + ']\n' +
+          (expandedBody || paramValues.join(', ')) +
+          (_tmplBtns.length ? '\n\n' + _tmplBtns.map((l, i) => (i + 1) + '. ' + l).join('\n') : '');
 
         const baseSessionId = selectedConv.session_id.replace(/_(travel|shield)$/, '');
         if (!N8N_BASE_URL) throw new Error('n8n Base URL not configured in Settings.');
@@ -4776,6 +4778,11 @@
       const components = [];
       if (bodyParams.length) components.push({ type: 'body', parameters: bodyParams });
       const phoneNumberId = PHONE_NUMBER_IDS[branch] || Object.values(PHONE_NUMBER_IDS)[0];
+      // Build full content string (body filled in + button labels) to pass to n8n for storage
+      let _ncExpandedBody = (bodyComp && bodyComp.text) ? bodyComp.text : '';
+      bodyParams.forEach((p, i) => { _ncExpandedBody = _ncExpandedBody.replace(new RegExp('\\{\\{' + (i + 1) + '\\}\\}', 'g'), p.text); });
+      const _ncBtns = ((_newChatSelectedTmpl.components || []).find(c => c.type === 'BUTTONS')?.buttons || []).map(b => b.text).filter(Boolean);
+      const _ncContent = '[Template: ' + _newChatSelectedTmpl.name + ']\n' + (_ncExpandedBody || bodyParams.map(p => p.text).join(', ')) + (_ncBtns.length ? '\n\n' + _ncBtns.map((l, i) => (i + 1) + '. ' + l).join('\n') : '');
       sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
       try {
         await metaPost('/' + phoneNumberId + '/messages', {
@@ -4800,7 +4807,8 @@
               phone_number: phone, phone_number_id: phoneNumberId, branch,
               template_name: _newChatSelectedTmpl.name,
               template_language: _newChatSelectedTmpl.language || 'en',
-              template_params: bodyParams.map(p => p.text)
+              template_params: bodyParams.map(p => p.text),
+              template_content: _ncContent
             })
           });
           let n8nData = {};
