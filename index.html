@@ -3255,8 +3255,15 @@
         // All messages are stored under the base phone number only (no _travel/_shield suffix).
         // Strip any suffix to get the bare phone, then do a simple exact match.
         const base = selectedSessionId.replace(/_(travel|shield)$/, '');
-        const msgQuery = 'messages?session_id=eq.' + encodeURIComponent(base) + '&select=*&order=created_at.asc';
-        console.log('[loadMessages] session:', selectedSessionId, '| base:', base);
+        // Also check alternate format: if base has no country code (8 digits), query 65+base too;
+        // if base has 65 prefix, also query without it. Handles phone mismatch from outbound templates.
+        const altBase = base.length === 10 && base.startsWith('65') ? base.slice(2)
+                      : base.length === 8 ? '65' + base : null;
+        const sessionFilter = altBase
+          ? 'session_id=in.(' + encodeURIComponent(base) + ',' + encodeURIComponent(altBase) + ')'
+          : 'session_id=eq.' + encodeURIComponent(base);
+        const msgQuery = 'messages?' + sessionFilter + '&select=*&order=created_at.asc';
+        console.log('[loadMessages] session:', selectedSessionId, '| base:', base, '| alt:', altBase);
         const allRelated = await sbGetAll(msgQuery);
         console.log('[loadMessages] fetched', allRelated?.length ?? 0, 'messages');
 
@@ -3273,7 +3280,7 @@
           // Fuzzy timestamp (group into 60-second buckets for deduplication)
           // This prevents duplicates if n8n webhook and dashboard both save to Supabase
           const ts = m.created_at ? new Date(m.created_at).getTime() : 0;
-          const fuzzyWindow = Math.floor(ts / 5000);
+          const fuzzyWindow = Math.floor(ts / 30000);
           const key = (m.role || '') + '|' + fuzzyWindow + '|' + (m.content || '');
 
           if (!dedupedByKey.has(key)) {
@@ -4750,12 +4757,14 @@
     }
 
     async function sendNewChat() {
-      const phone = document.getElementById('new-chat-phone').value.replace(/[^0-9]/g, '');
+      let phone = document.getElementById('new-chat-phone').value.replace(/[^0-9]/g, '');
+      // Auto-prepend SG country code for 8-digit numbers (WhatsApp always uses full international format)
+      if (phone.length === 8) phone = '65' + phone;
       const branch = document.getElementById('new-chat-branch').value;
       const errEl = document.getElementById('new-chat-error');
       const sendBtn = document.getElementById('new-chat-send-btn');
       errEl.style.display = 'none';
-      if (!phone || phone.length < 8) { errEl.textContent = 'Enter a valid phone number (min 8 digits).'; errEl.style.display = 'block'; return; }
+      if (!phone || phone.length < 10) { errEl.textContent = 'Enter a valid phone number with country code (e.g. 6591234567).'; errEl.style.display = 'block'; return; }
       if (!_newChatSelectedTmpl) { errEl.textContent = 'Select a template message.'; errEl.style.display = 'block'; return; }
       const bodyComp = (_newChatSelectedTmpl.components || []).find(c => c.type === 'BODY');
       const matches = bodyComp ? [...bodyComp.text.matchAll(/\{\{(\d+)\}\}/g)] : [];
