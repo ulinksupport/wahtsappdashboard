@@ -3874,6 +3874,7 @@
         }
 
         const exportData = [];
+        const fullChatData = [];
         const processedSessions = new Set();
 
         // Only export the Singlife WhatsApp line.
@@ -3912,13 +3913,10 @@
             c.phone_number ||
             baseSessionId;
 
+          const normalizedMessages = [];
+
           for (const m of msgs) {
             if (!m.created_at) continue;
-
-            // Export only messages matching the selected date in Singapore time
-            if (getSingaporeDateKey(m.created_at) !== selectedDate) {
-              continue;
-            }
 
             const roleLabel =
               m.role === 'user'
@@ -3929,7 +3927,7 @@
                     ? 'Human Agent'
                     : (m.role || 'Unknown');
 
-            exportData.push({
+            const normalizedRow = {
               "Session ID": baseSessionId,
               "Customer Name": customerName,
               "Phone": phone,
@@ -3940,7 +3938,29 @@
               "Media URL": m.media_url || '',
               "Media Type": m.media_type || '',
               "Original Media Filename": m.media_filename || ''
+            };
+
+            // Keep every message from the full conversation history
+            normalizedMessages.push(normalizedRow);
+
+            // XLSX and downloaded attachments remain limited
+            // to the selected audit date
+            if (getSingaporeDateKey(m.created_at) === selectedDate) {
+              exportData.push(normalizedRow);
+            }
+          }
+
+          // Include the full conversation only when this chat had
+          // at least one message on the selected audit date
+          const chatHasSelectedDateMessages =
+            normalizedMessages.some(row => {
+              return (
+                getSingaporeDateKey(row["Timestamp"]) === selectedDate
+              );
             });
+
+          if (chatHasSelectedDateMessages) {
+            fullChatData.push(...normalizedMessages);
           }
 
           processed++;
@@ -3978,7 +3998,12 @@
               export_date: selectedDate,
               timezone: 'Asia/Singapore',
               audit_folder_name: 'Singlife WA Audit',
-              data: exportData
+
+              // Selected-date messages for XLSX and media export
+              data: exportData,
+
+              // Entire histories for TXT transcript export
+              full_chat_data: fullChatData
             })
           }
         );
