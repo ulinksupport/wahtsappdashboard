@@ -3274,7 +3274,7 @@
           // This prevents duplicates if n8n webhook and dashboard both save to Supabase
           const ts = m.created_at ? new Date(m.created_at).getTime() : 0;
           const fuzzyMinute = Math.floor(ts / 60000);
-          const key = (m.role || '') + '|' + fuzzyMinute + '|' + (m.content || '');
+          const key = (m.role || '') + '|' + fuzzyMinute + '|' + (m.content || '') + '|' + (m.wamid || '');
 
           if (!dedupedByKey.has(key)) {
             dedupedByKey.set(key, m);
