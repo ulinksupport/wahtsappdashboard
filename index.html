@@ -3408,11 +3408,12 @@
           }
           // Detect Document — media_type may be MIME ('application/pdf') or WhatsApp type ('document')
           else if (lUrl.match(/\.(pdf|doc|docx|xls|xlsx|csv|txt|ppt|pptx)(\?.*)?$/) || (m.media_type && (m.media_type.includes('application/') || m.media_type.includes('text/') || m.media_type === 'document'))) {
-            let docLabel = 'Document File';
-            if (lUrl.match(/\.pdf(\?.*)?$/) || (m.media_type && m.media_type.includes('pdf'))) docLabel = 'PDF Document';
-            else if (lUrl.match(/\.(doc|docx)(\?.*)?$/) || (m.media_type && m.media_type.includes('word'))) docLabel = 'Word Document';
-            else if (lUrl.match(/\.(xls|xlsx|csv)(\?.*)?$/) || (m.media_type && m.media_type.includes('excel'))) docLabel = 'Spreadsheet';
-            else if (m.media_filename) docLabel = m.media_filename;
+            let docLabel = m.media_filename || 'Document File';
+            if (!m.media_filename) {
+              if (lUrl.match(/\.pdf(\?.*)?$/) || (m.media_type && m.media_type.includes('pdf'))) docLabel = 'PDF Document';
+              else if (lUrl.match(/\.(doc|docx)(\?.*)?$/) || (m.media_type && m.media_type.includes('word'))) docLabel = 'Word Document';
+              else if (lUrl.match(/\.(xls|xlsx|csv)(\?.*)?$/) || (m.media_type && m.media_type.includes('excel'))) docLabel = 'Spreadsheet';
+            }
 
             mediaHtml = `<div style="margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
               <div style="font-size: 28px;">📄</div>
