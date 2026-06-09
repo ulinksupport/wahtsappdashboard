@@ -3642,7 +3642,7 @@
             const roleLabel =
               m.role === 'user' ? 'Customer     ' :
                 m.role === 'assistant' ? 'Bot          ' :
-                  m.role === 'human_agent' ? 'Human Agent  ' : (m.role || 'Unknown').padEnd(13);
+                  m.role === 'human_agent' ? ('Human Agent' + (m.agent_name ? ' (' + m.agent_name + ')' : '') + '  ') : (m.role || 'Unknown').padEnd(13);
             return `[${t}] ${roleLabel}: ${(m.content || '').trim()}`;
           }).join('\n');
 
@@ -3759,7 +3759,7 @@
               const roleLabel =
                 m.role === 'user' ? 'Customer' :
                   m.role === 'assistant' ? 'Bot' :
-                    m.role === 'human_agent' ? 'Human Agent' : (m.role || 'Unknown');
+                    m.role === 'human_agent' ? ('Human Agent' + (m.agent_name ? ' (' + m.agent_name + ')' : '')) : (m.role || 'Unknown');
 
               exportData.push({
                 "Session ID": c.session_id,
@@ -3941,7 +3941,7 @@
                 : m.role === 'assistant'
                   ? 'Bot'
                   : m.role === 'human_agent'
-                    ? 'Human Agent'
+                    ? ('Human Agent' + (m.agent_name ? ' (' + m.agent_name + ')' : ''))
                     : (m.role || 'Unknown');
 
             exportData.push({
@@ -4092,7 +4092,7 @@
         const roleLabel =
           m.role === 'user' ? 'Customer     ' :
             m.role === 'assistant' ? 'Bot          ' :
-              m.role === 'human_agent' ? 'Human Agent  ' : (m.role || 'Unknown').padEnd(13);
+              m.role === 'human_agent' ? ('Human Agent' + (m.agent_name ? ' (' + m.agent_name + ')' : '') + '  ') : (m.role || 'Unknown').padEnd(13);
         return `[${t}] ${roleLabel}: ${(m.content || '').trim()}`;
       }).join('\n');
 
