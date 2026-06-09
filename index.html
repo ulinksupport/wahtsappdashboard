@@ -2160,6 +2160,9 @@
           scope)</span></label>
       <input id="cfg-meta-token" type="text" placeholder="EAAxxxxx…" />
 
+      <label>Your Name <span style="font-weight:400;color:#999;">(shown to other agents when you handle a chat)</span></label>
+      <input id="cfg-agent-name" type="text" placeholder="e.g. Sarah" />
+
       <div id="cfg-error" class="config-error"></div>
       <button id="config-save-btn" onclick="saveConfig()">Save &amp; Connect</button>
     </div>
@@ -2557,6 +2560,7 @@
     let N8N_BASE_URL = '';
     let META_WABA_ID = '';   // WhatsApp Business Account ID
     let META_TOKEN = '';   // System User access token
+    let agentName = '';   // current agent's display name
 
     function loadConfig() {
       SUPABASE_URL = localStorage.getItem('cfg_supabase_url') || '';
@@ -2564,6 +2568,7 @@
       N8N_BASE_URL = localStorage.getItem('cfg_n8n_url') || '';
       META_WABA_ID = localStorage.getItem('cfg_waba_id') || '';
       META_TOKEN = localStorage.getItem('cfg_meta_token') || '';
+      agentName = localStorage.getItem('cfg_agent_name') || '';
       return !!(SUPABASE_URL && SUPABASE_KEY && N8N_BASE_URL);
     }
 
@@ -2593,7 +2598,10 @@
       localStorage.setItem('cfg_anon_key', anon);
       localStorage.setItem('cfg_n8n_url', n8n);
       localStorage.setItem('cfg_waba_id', wabaId);
+      const agentNameVal = document.getElementById('cfg-agent-name').value.trim();
       localStorage.setItem('cfg_meta_token', metaTok);
+      localStorage.setItem('cfg_agent_name', agentNameVal);
+      agentName = agentNameVal;
 
       document.getElementById('config-overlay').style.display = 'none';
       btn.textContent = 'Save & Connect';
@@ -2608,6 +2616,7 @@
       document.getElementById('cfg-n8n-url').value = N8N_BASE_URL;
       document.getElementById('cfg-waba-id').value = META_WABA_ID;
       document.getElementById('cfg-meta-token').value = META_TOKEN;
+      document.getElementById('cfg-agent-name').value = agentName;
       document.getElementById('config-overlay').style.display = 'flex';
     }
 
@@ -3068,7 +3077,7 @@
 
         // Status badge from the primary (most recently active) session
         const statusBadge = primary.route === 'human'
-          ? '<span class="badge badge-human">Human</span>'
+          ? `<span class="badge badge-human">&#128100; ${escHtml(primary.agent_name || 'Human')}</span>`
           : primary.status === 'escalated'
             ? '<span class="badge badge-escalated">Escalated</span>'
             : '<span class="badge badge-active">Active</span>';
@@ -3510,12 +3519,16 @@
         const res = await fetch(N8N_BASE_URL + '/webhook/takeover', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: selectedConv.session_id, action, recent_messages: recentMessages })
+          body: JSON.stringify({ session_id: selectedConv.session_id, action, recent_messages: recentMessages, agent_name: action === 'human' ? (agentName || '') : '' })
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         selectedConv.route = action === 'human' ? 'human' : 'normal';
         const idx = conversations.findIndex(c => c.session_id === selectedConv.session_id);
-        if (idx >= 0) conversations[idx].route = selectedConv.route;
+        if (idx >= 0) {
+          conversations[idx].route = selectedConv.route;
+          conversations[idx].agent_name = action === 'human' ? (agentName || '') : null;
+          selectedConv.agent_name = conversations[idx].agent_name;
+        }
         updateChatHeader();
         renderConvList();
         showToast(action === 'human' ? '👤 Human mode activated' : '🤖 AI mode activated');
