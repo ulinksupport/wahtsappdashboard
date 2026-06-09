@@ -3392,7 +3392,7 @@
         // ── Message bubble ─────────────────────────────────────────
         const role = m.role || 'user';
         const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-        const roleLabel = role === 'human_agent' ? 'You (human)' : role === 'assistant' ? 'Bot' : 'Customer';
+        const roleLabel = role === 'human_agent' ? `You (${agentName || 'Human'})` : role === 'assistant' ? 'Bot' : 'Customer';
 
         // ── Check for Media & Convert URLs to Links ──────────────────
         let contentHtml = escHtml(m.content || '');
