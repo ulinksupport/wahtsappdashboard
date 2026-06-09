@@ -3392,7 +3392,7 @@
         // ── Message bubble ─────────────────────────────────────────
         const role = m.role || 'user';
         const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-        const roleLabel = role === 'human_agent' ? `You (${agentName || 'Human'})` : role === 'assistant' ? 'Bot' : 'Customer';
+        const roleLabel = role === 'human_agent' ? `You (${m.agent_name || agentName || 'Human'})` : role === 'assistant' ? 'Bot' : 'Customer';
 
         // ── Check for Media & Convert URLs to Links ──────────────────
         let contentHtml = escHtml(m.content || '');
@@ -4666,6 +4666,7 @@
           await sbPost('messages', {
             session_id: baseSessionId,
             role: 'human_agent',
+            agent_name: agentName || '',
             content: content,
             wamid: n8nData.wamid || null,
             msg_status: 'sent'
@@ -4982,6 +4983,7 @@
       const optimisticMsg = {
         session_id: baseSessionId,
         role: 'human_agent',
+        agent_name: agentName || '',
         content: capturedMedia ? (text || ('📎 ' + capturedMedia.file.name)) : text,
         media_url: capturedMedia ? capturedMedia.dataUrl : undefined,
         media_type: capturedMedia ? capturedMedia.file.type : undefined,
@@ -5014,7 +5016,8 @@
               message: text || ('📎 ' + capturedMedia.file.name),
               media_type: capturedMedia.waType,
               media_filename: capturedMedia.file.name,
-              media_url: mediaPublicUrl
+              media_url: mediaPublicUrl,
+              agent_name: agentName || ''
             })
           });
           if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -5032,7 +5035,8 @@
               conv_session_id: selectedConv.session_id,
               to_phone_number: selectedConv.phone_number,
               from_phone_number_id: phoneNumberId,
-              message: text
+              message: text,
+              agent_name: agentName || ''
             })
           });
           if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -5047,6 +5051,7 @@
           await sbPost('messages', {
             session_id: baseSessionId,
             role: 'human_agent',
+            agent_name: agentName || '',
             content: capturedMedia ? (text || ('📎 ' + capturedMedia.file.name)) : text,
             media_url: mediaPublicUrl || null,
             media_type: capturedMedia ? capturedMedia.waType : null,
