@@ -3128,6 +3128,35 @@
 
       resultsEl.innerHTML = '<div class="search-result-header" style="color:#9ca3af;">Searching…</div>';
 
+      // Match conversations directly by phone number / WhatsApp name / customer name
+      const seenBase = new Set();
+      const convMatches = conversations.filter(c => {
+        if (!convMatchesBrand(c)) return false;
+        const phone = (c.phone_number || '').toLowerCase();
+        const wname = (c.whatsapp_name || '').toLowerCase();
+        const cname = (c.customer_name || '').toLowerCase();
+        if (!(phone.includes(q) || wname.includes(q) || cname.includes(q))) return false;
+        const base = c.session_id.replace(/_(travel|shield)$/, '');
+        if (seenBase.has(base)) return false;
+        seenBase.add(base);
+        return true;
+      });
+
+      const convMatchesHtml = convMatches.length ? (
+        '<div class="search-result-header">Conversations (' + convMatches.length + ')</div>' +
+        convMatches.map(c => {
+          const name = c.whatsapp_name || c.customer_name || c.phone_number || 'Unknown';
+          const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+          return '<div class="search-msg-item" onclick="selectConvAndScroll(' + String.fromCharCode(39) + escAttr(c.session_id) + String.fromCharCode(39,44,39,39) + ')">' +
+            '<div class="conv-avatar">' + escHtml(initials) + '</div>' +
+            '<div class="conv-info">' +
+              '<div class="search-msg-meta"><div class="search-msg-name">' + escHtml(name) + '</div></div>' +
+              '<div class="search-msg-snippet">' + escHtml(c.phone_number || '') + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('')
+      ) : '';
+
       let msgData;
       try {
         // Query Supabase directly so search works across ALL messages, not just the cached 3000
@@ -3137,7 +3166,7 @@
         );
       } catch (e) {
         if (seq !== _searchSeq) return;
-        resultsEl.innerHTML = '<div style="padding:24px;text-align:center;color:#dc2626;font-size:13px;">Search failed: ' + escHtml(e.message) + '</div>';
+        resultsEl.innerHTML = convMatchesHtml + '<div style="padding:24px;text-align:center;color:#dc2626;font-size:13px;">Search failed: ' + escHtml(e.message) + '</div>';
         return;
       }
 
@@ -3159,7 +3188,7 @@
       });
 
       if (matches.length === 0) {
-        resultsEl.innerHTML = '<div style="padding:24px;text-align:center;color:#999;font-size:14px;">No messages found.</div>';
+        resultsEl.innerHTML = convMatchesHtml || '<div style="padding:24px;text-align:center;color:#999;font-size:14px;">No messages found.</div>';
         return;
       }
 
@@ -3167,7 +3196,7 @@
       const todayStr = new Date().toLocaleDateString('en-SG', sgOpts);
       const yesterdayStr = new Date(Date.now() - 864e5).toLocaleDateString('en-SG', sgOpts);
 
-      resultsEl.innerHTML = '<div class="search-result-header">Messages (' + matches.length + (matches.length === 100 ? '+' : '') + ')</div>' +
+      resultsEl.innerHTML = convMatchesHtml + '<div class="search-result-header">Messages (' + matches.length + (matches.length === 100 ? '+' : '') + ')</div>' +
         matches.map(({ msg, conv }) => {
           const name = conv.whatsapp_name || conv.customer_name || conv.phone_number || 'Unknown';
           const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
